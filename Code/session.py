@@ -1,4 +1,18 @@
 import socket, time, asyncio, threading
+import random
+import string
+
+def get_random_alphanumeric_string(length):
+    letters_and_digits = string.ascii_letters + string.digits
+    result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
+    print("Random alphanumeric String is:", result_str)
+## get_random_alphanumeric_string(24)
+
+uniqueString = "tTk8ppDJaqnHWP3z8cNCiXVY"
+
+sessionName = "TestSession"
+sessionPassword = ""
+Members = []
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -23,7 +37,7 @@ def serverMain():
     # Set a timeout so the socket does not block
     # indefinitely when trying to receive data.
     server.settimeout(0.2)
-    message = b"your very important message"
+    message = b"SESSION;" + sessionName.encode("utf-8") + b";" + uniqueString.encode("utf-8") + b"|"
     i = 0
     while i<=10:
         server.sendto(message, ("<broadcast>", 37020))
@@ -38,6 +52,13 @@ def clientMain():
     while True:
     # Thanks @seym45 for a fix
         data, addr = client.recvfrom(1024)
+        data = data.decode("utf-8")
+        data = data.replace("|", "")
+        
+        proc = data.split(";")
+        # print(proc[2])
+        if(proc[2] == uniqueString):
+            print("From same device")
         print("received message: %s" % data)
         print(f"Rec at {time.strftime('%X')}")
     print("Client quited")
