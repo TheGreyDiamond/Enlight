@@ -8,6 +8,12 @@ USED_SESSION_IDS = []
 
 VERSION = "1.1.1"
 
+## Role defs
+HOST = 0
+USER = 1
+ADMIN = 2
+VALID_ROLES = [HOST, USER, ADMIN]
+
 
 def get_random_alphanumeric_string(length):
     letters_and_digits = string.ascii_letters + string.digits
@@ -16,34 +22,86 @@ def get_random_alphanumeric_string(length):
 
 class enlightSession():
     ''' The main session class '''
-    def __init__(self, name, password = ""):
-        self.sessionId = None
+    def __init__(self, name = "", role = HOST, password = ""):
         self.sessionName = name
+        self.__activ__  = False
+
+        ## For HOST role
+        self.sessionId = None
+        self.__server__ = None
+        self.__server_thread__ = None
         self.sessionPassword = password
         self.members = []
+        self.allowJoin = False
+
+        ## For USER and ADMIN role
+        self.sessionId = None
+        self.__client__ = None
+        self.__client_thread__ = None
+        self.allOnlineSessions = {}
+        
+        self.__role__ = role
+
         if(self.sessionPassword == ""):
             self.passwordSet = "0"
         else:
             self.passwordSet = "1"
-        self.__activ__  = False
-        self.__server__ = None
-        self.__server_thread__ = None
-        self.allowJoin = False
+
+        if(self.__role__ not in VALID_ROLES):
+            self.__role__ = HOST
+            logging.warning("No vaild session role was set, using HOST as default")
+        
+        if(self.__role__ == HOST and name == ""):
+            logging.warning("Role is set to HOST, but no session name was given.")
+            self.sessionName = "Unnamed session"
+        
     
     def initConnection(self):
         ''' Starts the main dicovery/connction method(s) '''
         global USED_SESSION_IDS
-        self.sessionId = get_random_alphanumeric_string(24)
-        while(self.sessionId in USED_SESSION_IDS):
+        if(self.__role__ == HOST):
             self.sessionId = get_random_alphanumeric_string(24)
-        USED_SESSION_IDS.append(self.sessionId)
-        self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.__activ__ = True
-        self.allowJoin = True
-        logging.info("Starting server thread")
-        self.__server_thread__ = threading.Thread(target=self.serverMain, args=(), name="Discovery server")
-        self.__server_thread__.start()
+            while(self.sessionId in USED_SESSION_IDS):
+                self.sessionId = get_random_alphanumeric_string(24)
+            USED_SESSION_IDS.append(self.sessionId)
+            self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.__activ__ = True
+            self.allowJoin = True
+            logging.info("Starting server thread")
+            self.__server_thread__ = threading.Thread(target=self.serverMain, args=(), name="Discovery server")
+            self.__server_thread__.start()
+        elif(self.__role__ == USER or self.__role__ == ADMIN):
+            self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
+            self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.__client__.bind(("", 37020))
+            logging.info("Starting lighthouse thread")
+            self.__client_thread__ = threading.Thread(target=self.lighthouseMain, args=(), name="Lighthouse server")
+            self.__client_thread__.start()
+            self.__activ__  = True
+            
+
+    def lighthouseMain(self):
+        ''' The main thread for searching/finding sessions '''
+        while True:
+            data, addr = self.__client__.recvfrom(1024)
+            data = data.decode("utf-8")
+            data = data.replace("|", "")
+            proc = data.split(";")
+
+            logging.info("Got broadcast from " + str(addr) + " with data " + str(proc))
+            if(proc[3] != VERSION): #if(proc[3] == VERSION):
+                logging.warning("Software versions are not compatible. ABORT")
+            else:
+                ## More data handling
+                if(proc[2] not in self.allOnlineSessions):
+                    self.allOnlineSessions[proc[2]] = proc[1]
+                    logging.info("Found new session named " + proc[1])
+
+    def researchAllSessions(self):
+        if(self.__role__ != HOST):
+            logging.info("Clearing all know session")
+            self.allOnlineSessions = {}
 
     def serverMain(self):
         logging.info("Discovery server started")
@@ -57,9 +115,21 @@ class enlightSession():
             logging.info("Sent discovery broadcast")
             time.sleep(1)
         logging.info("Discovery server stopped")
+
+    def getSessionMembers(self):
+        return(self.members)
     
-
-
+    def stopSession(self):
+        if(self.__role__ == HOST):
+            self.allowJoin = False
+            self.__activ__ = False
+            # TODO: Kick all users
+            self.members = []
+            self.__server_thread__ = None
+            self.__server__.shutdown(socket.SHUT_RDWR)
+            self.__server__.close()
+        else:
+            logging.warning("stopSession was called, without the role set to HOST. Did you mean .leave?")
 
 
 # Enable port reusage so we will be able to run multiple clients and servers on single (host, port).
@@ -69,41 +139,15 @@ class enlightSession():
 # Thanks to @stevenreddie
 #   client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
-# Enable broadcasting mode
-client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
-client.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-client.bind(("", 37020))
+def testModule():
+    testSession = enlightSession("TestSession", role = HOST)
+    userSession = enlightSession("myLocalSession", role = USER)
+    userSession.initConnection()
+    testSession.initConnection()
+    time.sleep(5)
+    userSession.researchAllSessions()
+    time.sleep(5)
+    testSession.stopSession()
 
-
-
-
-
-def clientMain():
-    print("Client started")
-    while True:
-    # Thanks @seym45 for a fix
-        data, addr = client.recvfrom(1024)
-        data = data.decode("utf-8")
-        data = data.replace("|", "")
-        
-        proc = data.split(";")
-        # print(proc[2])
-        if(proc[2] == USED_SESSION_IDS[0]):
-            print("From same device")
-        print(addr)
-        print("received message: %s" % data)
-        print(f"Rec at {time.strftime('%X')}")
-    print("Client quited")
-
-def main():
-    thread = []
-    ses = enlightSession("TestSession")
-    ses.initConnection()
-    thread.append(threading.Thread(target=clientMain, args=()))
-    # thread.append(threading.Thread(target=serverMain, args=()))
-    for th in thread:
-        th.start()
-
-main()
-print("Quited")
+testModule()
