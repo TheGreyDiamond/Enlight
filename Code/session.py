@@ -76,27 +76,32 @@ class enlightSession():
             self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.__client__.bind(("", 37020))
             logging.info("Starting lighthouse thread")
+            self.__activ__  = True
             self.__client_thread__ = threading.Thread(target=self.lighthouseMain, args=(), name="Lighthouse server")
             self.__client_thread__.start()
-            self.__activ__  = True
+            
             
 
     def lighthouseMain(self):
         ''' The main thread for searching/finding sessions '''
-        while True:
-            data, addr = self.__client__.recvfrom(1024)
-            data = data.decode("utf-8")
-            data = data.replace("|", "")
-            proc = data.split(";")
-
-            logging.info("Got broadcast from " + str(addr) + " with data " + str(proc))
-            if(proc[3] != VERSION): #if(proc[3] == VERSION):
-                logging.warning("Software versions are not compatible. ABORT")
+        while self.__activ__:
+            try:
+                data, addr = self.__client__.recvfrom(1024)
+            except OSError:
+                logging.warning("Client socket, failure. Session maybe not avaiable anymore?")
             else:
-                ## More data handling
-                if(proc[2] not in self.allOnlineSessions):
-                    self.allOnlineSessions[proc[2]] = proc[1]
-                    logging.info("Found new session named " + proc[1])
+                data = data.decode("utf-8")
+                data = data.replace("|", "")
+                proc = data.split(";")
+
+                logging.info("Got broadcast from " + str(addr) + " with data " + str(proc))
+                if(proc[3] != VERSION): #if(proc[3] == VERSION):
+                    logging.warning("Software versions are not compatible. ABORT")
+                else:
+                    ## More data handling
+                    if(proc[2] not in self.allOnlineSessions):
+                        self.allOnlineSessions[proc[2]] = proc[1]
+                        logging.info("Found new session named " + proc[1])
 
     def researchAllSessions(self):
         if(self.__role__ != HOST):
@@ -119,6 +124,18 @@ class enlightSession():
     def getSessionMembers(self):
         return(self.members)
     
+    def leave(self):
+        ''' Leaves the session, can takes at least two seconds '''
+        if(self.__role__ == USER or self.__role__ == ADMIN):
+            ## TODO: Send leave command to host
+            self.__activ__  = False
+            time.sleep(2)
+            self.__client__.shutdown(socket.SHUT_RDWR)
+            self.__client__.close()
+            logging.info("Closed Lighthouse port")
+        else:
+            logging.warning("leave was called, without the role set to USER or ADMIN. Did you mean .stopSession?")
+
     def stopSession(self):
         if(self.__role__ == HOST):
             self.allowJoin = False
@@ -128,17 +145,9 @@ class enlightSession():
             self.__server_thread__ = None
             self.__server__.shutdown(socket.SHUT_RDWR)
             self.__server__.close()
+            logging.info("Closed Discovery server port")
         else:
             logging.warning("stopSession was called, without the role set to HOST. Did you mean .leave?")
-
-
-# Enable port reusage so we will be able to run multiple clients and servers on single (host, port).
-# Do not use socket.SO_REUSEADDR except you using linux(kernel<3.9): goto https://stackoverflow.com/questions/14388706/how-do-so-reuseaddr-and-so-reuseport-differ for more information.
-# For linux hosts all sockets that want to share the same address and port combination must belong to processes that share the same effective user ID!
-# So, on linux(kernel>=3.9) you have to run multiple servers and clients under one user to share the same (host, port).
-# Thanks to @stevenreddie
-#   client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-
 
 def testModule():
     testSession = enlightSession("TestSession", role = HOST)
@@ -149,5 +158,6 @@ def testModule():
     userSession.researchAllSessions()
     time.sleep(5)
     testSession.stopSession()
+    userSession.leave()
 
 testModule()
