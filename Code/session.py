@@ -39,6 +39,8 @@ class enlightSession():
         self.__client__ = None
         self.__client_thread__ = None
         self.allOnlineSessions = {}
+        self.connected = False
+        self.__direct_socket__ = None
         
         self.__role__ = role
 
@@ -100,10 +102,11 @@ class enlightSession():
                 else:
                     ## More data handling
                     if(proc[2] not in self.allOnlineSessions):
-                        self.allOnlineSessions[proc[2]] = proc[1]
+                        proc.append(addr)
+                        self.allOnlineSessions[proc[2]] = proc
                         logging.info("Found new session named " + proc[1])
 
-    def researchAllSessions(self):
+    def clearAllSessions(self):
         if(self.__role__ != HOST):
             logging.info("Clearing all know session")
             self.allOnlineSessions = {}
@@ -124,6 +127,32 @@ class enlightSession():
     def getSessionMembers(self):
         return(self.members)
     
+    def getSessionId(self):
+        return(self.sessionId)
+
+    def join(self, sessionID):
+        if(not self.connected):
+            try:
+                data = self.allOnlineSessions[sessionID]
+            except KeyError:
+                logging.error("an unknow/undiscorverd session ID was given")
+                return(-2)
+            else:
+                try:
+                    ## Try to open a socket to the ip/port
+                    self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # UDP
+                    self.__direct_socket__.connect(data[len(data)-1])
+                    self.__direct_socket__.sendall(b'CONNECT')
+                    logging.info("Sent JOIN intent to session host")
+                except ConnectionRefusedError:
+                    logging.warning("Connection refused by session host")
+                    return(-1)
+                else:
+                    return(1)
+        else:
+            logging.warning("join was called, while there is a session activ")
+            return(-2)
+
     def leave(self):
         ''' Leaves the session, can takes at least two seconds '''
         if(self.__role__ == USER or self.__role__ == ADMIN):
@@ -155,7 +184,7 @@ def testModule():
     userSession.initConnection()
     testSession.initConnection()
     time.sleep(5)
-    userSession.researchAllSessions()
+    userSession.join(testSession.getSessionId())
     time.sleep(5)
     testSession.stopSession()
     userSession.leave()
