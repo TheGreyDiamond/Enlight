@@ -197,7 +197,7 @@ class enlightSession():
             self.__server_thread__ = None
             self.__server__.shutdown(socket.SHUT_RDWR)
             self.__server__.close()
-            self.__direct_socket__.shutdown(socket.SHUT_RDWR)
+            #self.__direct_socket__.shutdown(socket.SHUT_RDWR)
             self.__direct_socket__.close()
             logging.info("Closed Discovery server port")
         else:
