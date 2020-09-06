@@ -33,6 +33,8 @@ class enlightSession():
         self.sessionPassword = password
         self.members = []
         self.allowJoin = False
+        self.__direct_socket__ = None
+        self.__direct_thread__ = None
 
         ## For USER and ADMIN role
         self.sessionId = None
@@ -73,6 +75,12 @@ class enlightSession():
             logging.info("Starting server thread")
             self.__server_thread__ = threading.Thread(target=self.serverMain, args=(), name="Discovery server")
             self.__server_thread__.start()
+
+            self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.__direct_socket__.bind(("", 65533))
+            self.__direct_thread__ = threading.Thread(target=self.lightSearcherMain, args=(), name="Inbound session server")
+
         elif(self.__role__ == USER or self.__role__ == ADMIN):
             self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
             self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -83,6 +91,19 @@ class enlightSession():
             self.__client_thread__.start()
             
             
+    def lightSearcherMain(self):
+        logging.info("Inbound connection handler started")
+        self.__direct_socket__.listen()
+        while self.allowJoin:
+            ''' The main thread for clients to connect '''
+            try:
+                conn, addr = self.__direct_socket__.accept()
+                data, addr = self.__direct_socket__.recvfrom(1024)
+            except OSError:
+                logging.warning("Client socket, failure. Session maybe not avaiable anymore?")
+            else:
+                print(data)
+        logging.info("Inbound connection handler stopped")
 
     def lighthouseMain(self):
         ''' The main thread for searching/finding sessions '''
@@ -139,9 +160,11 @@ class enlightSession():
                 return(-2)
             else:
                 try:
+                    #print((data[len(data)-1][0], 65533))
                     ## Try to open a socket to the ip/port
                     self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # UDP
-                    self.__direct_socket__.connect(data[len(data)-1])
+                    self.__direct_socket__.connect((data[len(data)-1][0], 65533))
+                    
                     self.__direct_socket__.sendall(b'CONNECT')
                     logging.info("Sent JOIN intent to session host")
                 except ConnectionRefusedError:
@@ -174,6 +197,8 @@ class enlightSession():
             self.__server_thread__ = None
             self.__server__.shutdown(socket.SHUT_RDWR)
             self.__server__.close()
+            self.__direct_socket__.shutdown(socket.SHUT_RDWR)
+            self.__direct_socket__.close()
             logging.info("Closed Discovery server port")
         else:
             logging.warning("stopSession was called, without the role set to HOST. Did you mean .leave?")
