@@ -78,8 +78,9 @@ class enlightSession():
 
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            self.__direct_socket__.bind(("", 65533))
+            self.__direct_socket__.bind(("", 5589))
             self.__direct_thread__ = threading.Thread(target=self.lightSearcherMain, args=(), name="Inbound session server")
+            self.__direct_thread__.start()
 
         elif(self.__role__ == USER or self.__role__ == ADMIN):
             self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
@@ -160,10 +161,10 @@ class enlightSession():
                 return(-2)
             else:
                 try:
-                    #print((data[len(data)-1][0], 65533))
+                   # print((data[len(data)-1][0], 5589))
                     ## Try to open a socket to the ip/port
                     self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # UDP
-                    self.__direct_socket__.connect((data[len(data)-1][0], 65533))
+                    self.__direct_socket__.connect((data[len(data)-1][0], 5589))
                     
                     self.__direct_socket__.sendall(b'CONNECT')
                     logging.info("Sent JOIN intent to session host")
@@ -208,9 +209,9 @@ def testModule():
     userSession = enlightSession("myLocalSession", role = USER)
     userSession.initConnection()
     testSession.initConnection()
-    time.sleep(5)
+    time.sleep(1)
     userSession.join(testSession.getSessionId())
-    time.sleep(5)
+    time.sleep(8)
     testSession.stopSession()
     userSession.leave()
 
