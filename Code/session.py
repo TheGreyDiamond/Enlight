@@ -88,23 +88,40 @@ class enlightSession():
             self.__client__.bind(("", 37020))
             logging.info("Starting lighthouse thread")
             self.__activ__  = True
+            self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.__direct_socket__.bind(("", 5589))
             self.__client_thread__ = threading.Thread(target=self.lighthouseMain, args=(), name="Lighthouse server")
             self.__client_thread__.start()
+            self.__direct_thread__ = threading.Thread(target=self.lightSearcherDirectMain, args=(), name="Inbound session direct server")
+            self.__direct_thread__.start()
+            self.__trying_to_connect__ = False
             
             
     def lightSearcherMain(self):
+        ''' The main thread for clients to connect '''
         logging.info("Inbound connection handler started")
         self.__direct_socket__.listen()
-        while self.allowJoin:
-            ''' The main thread for clients to connect '''
+        while self.allowJoin: 
             try:
                 conn, addr = self.__direct_socket__.accept()
-                data, addr = self.__direct_socket__.recvfrom(1024)
+                data = conn.recv(1024)
+                conn.sendall(b"CONNECTION INT OK")
+                logging.info("Got inbound connection with data: " + str(data) + " from " + str(addr))
             except OSError:
                 logging.warning("Client socket, failure. Session maybe not avaiable anymore?")
-            else:
-                print(data)
+            
         logging.info("Inbound connection handler stopped")
+
+    def lightSearcherDirectMain(self):
+        while self.allowJoin: 
+            try:
+                conn, addr = self.__direct_socket__.accept()
+                data = conn.recv(1024)
+                if(self.__trying_to_connect__ != False):
+                    conn.sendall(b"ACK")
+                logging.info("Got inbound connection with data: " + str(data) + " from " + str(addr))
+            except OSError:
+                logging.warning("Client socket, failure. Session maybe not avaiable anymore?")
 
     def lighthouseMain(self):
         ''' The main thread for searching/finding sessions '''
@@ -167,6 +184,7 @@ class enlightSession():
                     self.__direct_socket__.connect((data[len(data)-1][0], 5589))
                     
                     self.__direct_socket__.sendall(b'CONNECT')
+                    self.__trying_to_connect__ = sessionID
                     logging.info("Sent JOIN intent to session host")
                 except ConnectionRefusedError:
                     logging.warning("Connection refused by session host")
