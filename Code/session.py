@@ -101,7 +101,7 @@ class enlightSession():
             logging.info("Starting lighthouse thread")
             self.__activ__  = True
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.__direct_socket__.bind((self.__my_ip__, 5589))
+            self.__direct_socket__.bind(("", 5589))
             self.__client_thread__ = threading.Thread(target=self.lighthouseMain, args=(), name="Lighthouse server")
             self.__client_thread__.start()
             self.__direct_thread__ = threading.Thread(target=self.lightSearcherDirectMain, args=(), name="Inbound session direct server")
