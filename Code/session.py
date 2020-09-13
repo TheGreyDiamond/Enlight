@@ -79,7 +79,7 @@ class enlightSession():
                 self.sessionId = get_random_alphanumeric_string(24)
             logging.info("My session id is " + self.sessionId)
             USED_SESSION_IDS.append(self.sessionId)
-            self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)#, socket.IPPROTO_UDP)
             self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.__activ__ = True
             self.allowJoin = True
@@ -170,7 +170,7 @@ class enlightSession():
         message = b"SESSION;" + self.sessionName.encode("utf-8") + b";" + self.sessionId.encode("utf-8") + b";"  + VERSION.encode("utf-8") + b";" + self.passwordSet.encode("utf-8") + b";" + str(len(self.members)).encode("utf-8") + b"|"
 
         while self.allowJoin:
-            self.__server__.sendto(message, ("<broadcast>", 37020))    # <broadcast>
+            self.__server__.sendto(message, ("255.255.255.255", 37020))    # <broadcast>  192.168.178.60
             logging.info("Sent discovery broadcast")
             time.sleep(1)
         logging.info("Discovery server stopped")
