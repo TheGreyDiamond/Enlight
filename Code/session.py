@@ -97,7 +97,7 @@ class enlightSession():
             self.__direct_thread__.start()
             self.__trying_to_connect__ = False
             
-            
+
     def lightSearcherMain(self):
         ''' The main thread for clients to connect '''
         logging.info("Inbound connection handler started")
