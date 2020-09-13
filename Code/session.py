@@ -67,6 +67,7 @@ class enlightSession():
             self.sessionId = get_random_alphanumeric_string(24)
             while(self.sessionId in USED_SESSION_IDS):
                 self.sessionId = get_random_alphanumeric_string(24)
+            logging.info("My session id is " + self.sessionId)
             USED_SESSION_IDS.append(self.sessionId)
             self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -78,7 +79,7 @@ class enlightSession():
 
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.__direct_socket__.bind(("", 5589))
             self.__direct_thread__ = threading.Thread(target=self.lightSearcherMain, args=(), name="Inbound session server")
             self.__direct_thread__.start()
@@ -223,6 +224,7 @@ class enlightSession():
         else:
             logging.warning("stopSession was called, without the role set to HOST. Did you mean .leave?")
 
+
 def testModule():
     testSession = enlightSession("TestSession", role = HOST)
     userSession = enlightSession("myLocalSession", role = USER)
@@ -234,4 +236,11 @@ def testModule():
     testSession.stopSession()
     userSession.leave()
 
-testModule()
+def testOnlyServer():
+    testSession = enlightSession("TestSession", role = HOST)
+    testSession.initConnection()
+    time.sleep(10)
+    testSession.stopSession()
+
+if __name__ == "__main__":
+    testOnlyServer()
