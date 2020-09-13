@@ -14,6 +14,13 @@ USER = 1
 ADMIN = 2
 VALID_ROLES = [HOST, USER, ADMIN]
 
+def get_local_ip(no = 0):
+    ''' Gets the local ip address '''
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ipAddr = s.getsockname()[no]
+    s.close()
+    return(ipAddr)
 
 def get_random_alphanumeric_string(length):
     letters_and_digits = string.ascii_letters + string.digits
@@ -25,6 +32,9 @@ class enlightSession():
     def __init__(self, name = "", role = HOST, password = ""):
         self.sessionName = name
         self.__activ__  = False
+
+        self.__my_ip__ = get_local_ip()
+        logging.info("My IP is: " + self.__my_ip__)
 
         ## For HOST role
         self.sessionId = None
@@ -87,11 +97,11 @@ class enlightSession():
         elif(self.__role__ == USER or self.__role__ == ADMIN):
             self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
             self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            self.__client__.bind(("", 37020))
+            self.__client__.bind((self.__my_ip__, 37020))
             logging.info("Starting lighthouse thread")
             self.__activ__  = True
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.__direct_socket__.bind(("", 5589))
+            self.__direct_socket__.bind((self.__my_ip__, 5589))
             self.__client_thread__ = threading.Thread(target=self.lighthouseMain, args=(), name="Lighthouse server")
             self.__client_thread__.start()
             self.__direct_thread__ = threading.Thread(target=self.lightSearcherDirectMain, args=(), name="Inbound session direct server")
@@ -160,7 +170,7 @@ class enlightSession():
         message = b"SESSION;" + self.sessionName.encode("utf-8") + b";" + self.sessionId.encode("utf-8") + b";"  + VERSION.encode("utf-8") + b";" + self.passwordSet.encode("utf-8") + b";" + str(len(self.members)).encode("utf-8") + b"|"
 
         while self.allowJoin:
-            self.__server__.sendto(message, ("<broadcast>", 37020))
+            self.__server__.sendto(message, ("<broadcast>", 37020))    # <broadcast>
             logging.info("Sent discovery broadcast")
             time.sleep(1)
         logging.info("Discovery server stopped")
@@ -225,6 +235,7 @@ class enlightSession():
             logging.warning("stopSession was called, without the role set to HOST. Did you mean .leave?")
 
 
+
 def testModule():
     testSession = enlightSession("TestSession", role = HOST)
     userSession = enlightSession("myLocalSession", role = USER)
@@ -239,7 +250,7 @@ def testModule():
 def testOnlyServer():
     testSession = enlightSession("TestSession", role = HOST)
     testSession.initConnection()
-    time.sleep(10)
+    time.sleep(30)
     testSession.stopSession()
 
 if __name__ == "__main__":
