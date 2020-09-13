@@ -95,7 +95,7 @@ class enlightSession():
             self.__direct_thread__.start()
 
         elif(self.__role__ == USER or self.__role__ == ADMIN):
-            self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
+            self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)#, socket.IPPROTO_UDP)  # UDP
             self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.__client__.bind((self.__my_ip__, 37020))
             logging.info("Starting lighthouse thread")
@@ -186,7 +186,7 @@ class enlightSession():
             try:
                 data = self.allOnlineSessions[sessionID]
             except KeyError:
-                logging.error("an unknow/undiscorverd session ID was given")
+                logging.error("an unknow/undiscorvered session ID was given")
                 return(-2)
             else:
                 try:
