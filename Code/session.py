@@ -23,6 +23,7 @@ def get_local_ip(no = 0):
     return(ipAddr)
 
 def get_random_alphanumeric_string(length):
+    ''' Returns a randomly genrated alphanumeric string, with the length `length`  '''
     letters_and_digits = string.ascii_letters + string.digits
     result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
     return(result_str)
@@ -160,6 +161,7 @@ class enlightSession():
                         logging.info("Found new session named " + proc[1])
 
     def clearAllSessions(self):
+        ''' Clears the sessionlist chace '''
         if(self.__role__ != HOST):
             logging.info("Clearing all know session")
             self.allOnlineSessions = {}
@@ -179,12 +181,15 @@ class enlightSession():
         logging.info("Discovery server stopped")
 
     def getSessionMembers(self):
+        ''' Get all session members '''
         return(self.members)
     
     def getSessionId(self):
+        ''' Get the local session id '''
         return(self.sessionId)
 
     def join(self, sessionID):
+        ''' Join a remote session '''
         if(not self.connected):
             try:
                 data = self.allOnlineSessions[sessionID]
@@ -211,7 +216,7 @@ class enlightSession():
             return(-2)
 
     def leave(self):
-        ''' Leaves the session, can takes at least two seconds '''
+        ''' Leaves the session, will take at least two seconds '''
         if(self.__role__ == USER or self.__role__ == ADMIN):
             ## TODO: Send leave command to host
             self.__activ__  = False
@@ -223,6 +228,7 @@ class enlightSession():
             logging.warning("leave was called, without the role set to USER or ADMIN. Did you mean .stopSession?")
 
     def stopSession(self):
+        ''' Stops the session as a HOST '''
         if(self.__role__ == HOST):
             self.allowJoin = False
             self.__activ__ = False
