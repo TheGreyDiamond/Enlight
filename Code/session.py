@@ -81,7 +81,7 @@ class enlightSession():
             USED_SESSION_IDS.append(self.sessionId)
             self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)#, socket.IPPROTO_UDP)
             self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            ### self.__server__.bind(("", 44444))   # Bind it to a random port # 37020
+            self.__server__.bind(("", 44444))   # Bind it to a random port # 37020
             self.__activ__ = True
             self.allowJoin = True
             logging.info("Starting server thread")
@@ -98,7 +98,7 @@ class enlightSession():
         elif(self.__role__ == USER or self.__role__ == ADMIN):
             self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)#, socket.IPPROTO_UDP)  # UDP
             self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            self.__client__.bind(("", 37020))  #self.__my_ip__
+            self.__client__.bind((self.__my_ip__, 37020))
             logging.info("Starting lighthouse thread")
             self.__activ__  = True
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -171,7 +171,7 @@ class enlightSession():
         message = b"SESSION;" + self.sessionName.encode("utf-8") + b";" + self.sessionId.encode("utf-8") + b";"  + VERSION.encode("utf-8") + b";" + self.passwordSet.encode("utf-8") + b";" + str(len(self.members)).encode("utf-8") + b"|"
 
         while self.allowJoin:
-            self.__server__.sendto(message, ("192.168.255.255", 37020))    # <broadcast>  192.168.178.60 255.255.255.255
+            self.__server__.sendto(message, ("192.168.178.60", 37020))    # <broadcast>  192.168.178.60 255.255.255.255
             logging.info("Sent discovery broadcast")
             time.sleep(1)
         logging.info("Discovery server stopped")
