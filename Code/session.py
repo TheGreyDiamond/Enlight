@@ -99,6 +99,7 @@ class enlightSession():
             self.__client__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)#, socket.IPPROTO_UDP)  # UDP
             self.__client__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.__client__.bind((self.__my_ip__, 37020))
+
             logging.info("Starting lighthouse thread")
             self.__activ__  = True
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -172,6 +173,7 @@ class enlightSession():
 
         while self.allowJoin:
             self.__server__.sendto(message, ("192.168.178.60", 37020))    # <broadcast>  192.168.178.60 255.255.255.255
+
             logging.info("Sent discovery broadcast")
             time.sleep(1)
         logging.info("Discovery server stopped")
