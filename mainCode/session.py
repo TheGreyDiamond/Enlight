@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(thr
 
 USED_SESSION_IDS = []
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 ## Role defs
 HOST = 0
@@ -80,9 +80,8 @@ class enlightSession():
                 self.sessionId = get_random_alphanumeric_string(24)
             logging.info("My session id is " + self.sessionId)
             USED_SESSION_IDS.append(self.sessionId)
-            self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)#, socket.IPPROTO_UDP)
+            self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            ### self.__server__.bind(("", 37020))   # Bind it to a random port # 37020
             self.__activ__ = True
             self.allowJoin = True
             logging.info("Starting server thread")
