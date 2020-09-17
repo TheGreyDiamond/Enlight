@@ -174,7 +174,9 @@ class enlightSession():
         message = b"SESSION;" + self.sessionName.encode("utf-8") + b";" + self.sessionId.encode("utf-8") + b";"  + VERSION.encode("utf-8") + b";" + self.passwordSet.encode("utf-8") + b";" + str(len(self.members)).encode("utf-8") + b"|"
 
         while self.allowJoin:
-            self.__server__.sendto(message, ("192.168.178.255", 37020))    # <broadcast>  192.168.178.60 255.255.255.255
+            ipChoped = get_local_ip().split(".")
+            ipWithBroadEnding = ipChoped[0] + "." + ipChoped[1] + "." + ipChoped[2] + ".255"
+            self.__server__.sendto(message, (ipWithBroadEnding, 37020))    # <broadcast>  192.168.178.60 255.255.255.255
 
             logging.info("Sent discovery broadcast")
             time.sleep(1)
