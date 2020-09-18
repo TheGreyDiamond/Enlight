@@ -217,16 +217,20 @@ class enlightSession():
     def getSessionMembers(self):
         """
         Get all session members
-        :return: Returns a list of all members
+        :list members: A list of all Session members
         """
         return(self.members)
     
     def getSessionId(self):
-        ''' Get the local session id '''
+        """
+        Get the local session id
+        """
         return(self.sessionId)
 
     def join(self, sessionID):
-        ''' Join a remote session '''
+        """
+        Join a remote session
+        """
         if(not self.connected):
             try:
                 data = self.allOnlineSessions[sessionID]
@@ -253,7 +257,9 @@ class enlightSession():
             return(-2)
 
     def leave(self):
-        ''' Leaves the session, will take at least two seconds '''
+        """
+        Leaves the session, will take at least two seconds
+        """
         if(self.__role__ == USER or self.__role__ == ADMIN):
             ## TODO: Send leave command to host
             self.__activ__  = False
@@ -265,7 +271,9 @@ class enlightSession():
             logging.warning("leave was called, without the role set to USER or ADMIN. Did you mean .stopSession?")
 
     def stopSession(self):
-        ''' Stops the session as a HOST '''
+        """
+        Stops the session as a HOST
+        """
         if(self.__role__ == HOST):
             self.allowJoin = False
             self.__activ__ = False
@@ -283,6 +291,9 @@ class enlightSession():
 
 
 def testModule():
+    """
+    Tests the session server
+    """
     testSession = enlightSession("TestSession", role = HOST)
     userSession = enlightSession("myLocalSession", role = USER)
     userSession.initConnection()
@@ -294,6 +305,9 @@ def testModule():
     userSession.leave()
 
 def testOnlyServer():
+    """
+    Tests the session server without client
+    """
     testSession = enlightSession("TestSession", role = HOST)
     testSession.initConnection()
     time.sleep(30)
