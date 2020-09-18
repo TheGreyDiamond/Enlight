@@ -1,3 +1,9 @@
+'''
+session.py
+===============================
+The session support for Enlight
+'''
+
 import socket, time, threading, logging
 import random
 import string
@@ -15,7 +21,11 @@ ADMIN = 2
 VALID_ROLES = [HOST, USER, ADMIN]
 
 def get_local_ip(no = 0):
-    ''' Gets the local ip address '''
+    """
+    Gets the local ip address
+
+    :int no: ID of the ip adress
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.connect(("8.8.8.8", 80))
     ipAddr = s.getsockname()[no]
@@ -23,14 +33,23 @@ def get_local_ip(no = 0):
     return(ipAddr)
 
 def get_random_alphanumeric_string(length):
-    ''' Returns a randomly genrated alphanumeric string, with the length `length`  '''
+    """
+    Returns a random alphanumeric string
+
+    :int length: The length of the output string
+    """
     letters_and_digits = string.ascii_letters + string.digits
     result_str = ''.join((random.choice(letters_and_digits) for i in range(length)))
     return(result_str)
 
 class enlightSession():
-    ''' The main session class '''
-    def __init__(self, name = "", role = HOST, password = ""):
+    """
+    The main session class
+
+    :string name: The session name (not needed)
+    :string role: The role of the local instance (defaults to HOST, can be HOST or USER)
+    """
+    def __init__(self, name = "", role = HOST, passcode = ""):
         self.sessionName = name
         self.__activ__  = False
 
@@ -41,7 +60,7 @@ class enlightSession():
         self.sessionId = None
         self.__server__ = None
         self.__server_thread__ = None
-        self.sessionPassword = password
+        self.sessionpasscode = passcode
         self.members = []
         self.allowJoin = False
         self.__direct_socket__ = None
@@ -57,10 +76,10 @@ class enlightSession():
         
         self.__role__ = role
 
-        if(self.sessionPassword == ""):
-            self.passwordSet = "0"
+        if(self.sessionpasscode == ""):
+            self.passcodeSet = "0"
         else:
-            self.passwordSet = "1"
+            self.passcodeSet = "1"
 
         if(self.__role__ not in VALID_ROLES):
             self.__role__ = HOST
@@ -72,7 +91,9 @@ class enlightSession():
         
     
     def initConnection(self):
-        ''' Starts the main dicovery/connction method(s) '''
+        """
+        Starts the main dicovery/connction method(s)
+        """
         global USED_SESSION_IDS
         if(self.__role__ == HOST):
             self.sessionId = get_random_alphanumeric_string(24)
@@ -112,7 +133,9 @@ class enlightSession():
             
 
     def lightSearcherMain(self):
-        ''' The main thread for clients to connect '''
+        """
+        The main thread for clients to connect
+        """
         logging.info("Inbound connection handler started")
         self.__direct_socket__.listen()
         while self.allowJoin: 
@@ -127,6 +150,9 @@ class enlightSession():
         logging.info("Inbound connection handler stopped")
 
     def lightSearcherDirectMain(self):
+        """
+        The Handler for direct comuncation between HOST and USER
+        """
         while self.allowJoin: 
             try:
                 conn, addr = self.__direct_socket__.accept()
@@ -138,7 +164,9 @@ class enlightSession():
                 logging.warning("Client socket, failure. Session maybe not avaiable anymore?")
 
     def lighthouseMain(self):
-        ''' The main thread for searching/finding sessions '''
+        """
+        The main thread for searching/finding sessions
+        """
         while self.__activ__:
             try:
                 data, addr = self.__client__.recvfrom(1024)
@@ -160,17 +188,22 @@ class enlightSession():
                         logging.info("Found new session named " + proc[1])
 
     def clearAllSessions(self):
-        ''' Clears the sessionlist chace '''
+        """
+        Clears all discoverd sessions 
+        """
         if(self.__role__ != HOST):
             logging.info("Clearing all know session")
             self.allOnlineSessions = {}
 
     def serverMain(self):
+        """
+        Main Discovery server
+        """
         logging.info("Discovery server started")
         # Set a timeout so the socket does not block
         # indefinitely when trying to receive data.
         self.__server__.settimeout(0.2)
-        message = b"SESSION;" + self.sessionName.encode("utf-8") + b";" + self.sessionId.encode("utf-8") + b";"  + VERSION.encode("utf-8") + b";" + self.passwordSet.encode("utf-8") + b";" + str(len(self.members)).encode("utf-8") + b"|"
+        message = b"SESSION;" + self.sessionName.encode("utf-8") + b";" + self.sessionId.encode("utf-8") + b";"  + VERSION.encode("utf-8") + b";" + self.passcodeSet.encode("utf-8") + b";" + str(len(self.members)).encode("utf-8") + b"|"
 
         while self.allowJoin:
             ipChoped = get_local_ip().split(".")
@@ -182,7 +215,10 @@ class enlightSession():
         logging.info("Discovery server stopped")
 
     def getSessionMembers(self):
-        ''' Get all session members '''
+        """
+        Get all session members
+        :return: Returns a list of all members
+        """
         return(self.members)
     
     def getSessionId(self):
