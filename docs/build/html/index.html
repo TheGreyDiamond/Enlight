@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Enlight’s documentation! &#8212; Enlight  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-mainCode.session">
+<span id="welcome-to-enlight-s-documentation"></span><h1>Welcome to Enlight’s documentation!<a class="headerlink" href="#module-mainCode.session" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="mainCode.session.enlightSession">
+<em class="property">class </em><code class="sig-prename descclassname">mainCode.session.</code><code class="sig-name descname">enlightSession</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">role</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">password</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main session class</p>
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.clearAllSessions">
+<code class="sig-name descname">clearAllSessions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.clearAllSessions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the sessionlist chace</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.getSessionId">
+<code class="sig-name descname">getSessionId</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.getSessionId" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the local session id</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.getSessionMembers">
+<code class="sig-name descname">getSessionMembers</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.getSessionMembers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all session members</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.initConnection">
+<code class="sig-name descname">initConnection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.initConnection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts the main dicovery/connction method(s)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.join">
+<code class="sig-name descname">join</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sessionID</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.join" title="Permalink to this definition">¶</a></dt>
+<dd><p>Join a remote session</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.leave">
+<code class="sig-name descname">leave</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.leave" title="Permalink to this definition">¶</a></dt>
+<dd><p>Leaves the session, will take at least two seconds</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.lightSearcherMain">
+<code class="sig-name descname">lightSearcherMain</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.lightSearcherMain" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main thread for clients to connect</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.lighthouseMain">
+<code class="sig-name descname">lighthouseMain</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.lighthouseMain" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main thread for searching/finding sessions</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="mainCode.session.enlightSession.stopSession">
+<code class="sig-name descname">stopSession</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.enlightSession.stopSession" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stops the session as a HOST</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="mainCode.session.get_local_ip">
+<code class="sig-prename descclassname">mainCode.session.</code><code class="sig-name descname">get_local_ip</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">no</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.get_local_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the local ip address</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="mainCode.session.get_random_alphanumeric_string">
+<code class="sig-prename descclassname">mainCode.session.</code><code class="sig-name descname">get_random_alphanumeric_string</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">length</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mainCode.session.get_random_alphanumeric_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a randomly genrated alphanumeric string, with the length <cite>length</cite></p>
+</dd></dl>
+
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p>:ref:<a href="#id1"><span class="problematic" id="id2">`</span></a>search</p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Enlight</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, TheGreyDiamond.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
