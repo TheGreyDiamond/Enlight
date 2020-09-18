@@ -24,6 +24,15 @@ class SessionTesting(unittest.TestCase):
         time.sleep(3)
         self.assertEqual(self.testSession.sessionId, self.testSession.getSessionId())
     
+    def test_if_connection_works(self):
+        self.recSession = mainCode.session.enlightSession("LocalSession", role = mainCode.session.USER)
+        self.recSession.initConnection()
+        time.sleep(1)
+        sessnId = list(self.recSession.allOnlineSessions.keys())[0]
+        print(sessnId)
+        self.recSession.leave()
+        self.assertEqual(self.testSession.getSessionId(), sessnId)
+    
     def tearDown(self):
         self.testSession.stopSession()
 

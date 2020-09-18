@@ -103,6 +103,7 @@ class enlightSession():
             USED_SESSION_IDS.append(self.sessionId)
             self.__server__ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.__server__.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.__activ__ = True
             self.allowJoin = True
             logging.info("Starting server thread")
@@ -111,7 +112,7 @@ class enlightSession():
 
             self.__direct_socket__ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            # self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.__direct_socket__.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.__direct_socket__.bind(("", 5589))
             self.__direct_thread__ = threading.Thread(target=self.lightSearcherMain, args=(), name="Inbound session server")
             self.__direct_thread__.start()
