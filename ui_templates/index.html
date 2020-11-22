@@ -1,15 +1,49 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Hello World!</title>
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
-    <link href="static/default.css" rel="stylesheet"/>
-</head>
-<body>
+    <!--<meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'unsafe-inline';"
+    />-->
+    <link href="static/default.css" rel="stylesheet" />
+    <link href="static/fontawesome-free-5.15.1-web/css/all.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="header-bar" class="header-bar">
+      <clock id="clock" class="header-clock"></clock>
+      <battery id="battery"></battery>
+    </div>
+    <script>
+      function updateTime(k) {
+        if (k < 10) {
+          return "0" + k;
+        } else {
+          return k;
+        }
+      }
+      setInterval(function(){
+        var date = new Date();
+        hour = updateTime(date.getHours());
+        min = updateTime(date.getMinutes());
+        sec = updateTime(date.getSeconds());
+        document.getElementById("clock").innerHTML = hour + ":" + min + ":" + sec;
+        }, 200);
+    </script>
     <h1>Hello World!</h1>
-    We are using node <script>document.write(process.versions.node)</script>,
-    Chrome <script>document.write(process.versions.chrome)</script>,
-    and Electron <script>document.write(process.versions.electron)</script>.
-</body>
+    We are using node
+    <script>
+      document.write(process.versions.node);
+    </script>
+    , Chrome
+    <script>
+      document.write(process.versions.chrome);
+    </script>
+    , and Electron
+    <script>
+      document.write(process.versions.electron);
+    </script>
+    .
+  </body>
 </html>
