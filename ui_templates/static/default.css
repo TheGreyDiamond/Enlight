@@ -26,3 +26,10 @@ small {
     padding: 2px;
     padding-right: 4px;
 }
+
+.battery {
+    right: 80px;
+    position: fixed;
+    padding: 2px;
+    padding-right: 4px;
+}
