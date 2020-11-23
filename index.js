@@ -4,6 +4,22 @@ const { win32 } = require("path");
 const sysInf = require("systeminformation");
 
 var aWin2 = undefined;
+var header = undefined;
+
+header = fs.readFileSync("ui_templates/header.html").toString();
+
+/// !!!-----------!!!
+/// PAGE LOOKUP TABLE
+var pageLookup = {};
+pageLookup["index"] = "index.html";
+pageLookup["session"] = "sessions.html";
+
+fs.readFile('ui_templates/sessions.html', 'utf8', function (err,data) {
+  if (err) {
+    return console.log(err);
+  }
+  pageLookup["sessionPRELOAD"] = data;
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -17,7 +33,7 @@ function createWindow() {
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
   main = fs.readFileSync("ui_templates/index.html").toString();
-  header = fs.readFileSync("ui_templates/header.html").toString();
+  //header = fs.readFileSync("ui_templates/header.html").toString();
   toLoad = header + main;
   fs.writeFileSync("ui_templates/temp.html", toLoad)
   //win.loadURL("data:text/html;charset=utf-8," + encodeURI(toLoad));
@@ -123,6 +139,17 @@ function init() {
        
       }
       
+    }else if (String(arg).includes("PAGE:change")) {
+      newPage = String(arg).split(".")[1]
+      main = pageLookup[newPage + "PRELOAD"]
+      if(main == undefined){
+        main = fs.readFileSync("ui_templates/" + pageLookup[newPage]).toString();
+      }
+      toLoad = header + main;
+      fs.writeFileSync("ui_templates/temp.html", toLoad)
+      win.loadFile("ui_templates/temp.html")
+
+      event.returnValue = "";
     }else{
       event.returnValue = "ERR:UNKNOW_CMD"
     }
