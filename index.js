@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain } = require("electron");
+const { app, BrowserWindow, screen, ipcMain, BrowserView } = require("electron");
 const fs = require("fs");
 const { win32 } = require("path");
 const sysInf = require("systeminformation");
@@ -16,7 +16,13 @@ function createWindow() {
   win.setFullScreen(true);
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  win.loadFile("ui_templates/index.html");
+  main = fs.readFileSync("ui_templates/index.html").toString();
+  header = fs.readFileSync("ui_templates/header.html").toString();
+  toLoad = header + main;
+  fs.writeFileSync("ui_templates/temp.html", toLoad)
+  //win.loadURL("data:text/html;charset=utf-8," + encodeURI(toLoad));
+  win.loadFile("ui_templates/temp.html")
+  return(win)
 }
 
 function createStartupInfo() {
@@ -59,8 +65,19 @@ function doneLoading() {
 }
 
 function init() {
-  createWindow();
+  win = createWindow();
   aWin2 = createStartupInfo();
+  //const view = new BrowserView({
+  //  webPreferences: {
+  //    nodeIntegration: true,
+  //  },
+  //})
+
+  //win.setBrowserView(view)
+  //view.setBounds({ x: 0, y: 0, width: screen.getPrimaryDisplay().size.width, height: 100 })
+  //view.webContents.loadFile('ui_templates/header.html')
+
+  
   setTimeout(doneLoading, 2000);
   ipcMain.on("asynchronous-message", (event, arg) => {
     console.log(arg); // prints "ping"
