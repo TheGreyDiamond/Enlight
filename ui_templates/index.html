@@ -39,6 +39,7 @@
       </div>
     </div>
     <script>
+      var loaderInUse = true;
       const { ipcRenderer } = require("electron");
       setInterval(function () {
         // Pulling general info from main thread
@@ -46,16 +47,20 @@
           "synchronous-message",
           "loadOverride"
         );
-        if (loadOverride) {
-          document.getElementById("loader").innerHTML = "&#xf1ce;";
-        } else {
-          document.getElementById("loader").innerHTML = "";
+        if (!loaderInUse) {
+          if (loadOverride) {
+            document.getElementById("loader").innerHTML = "&#xf1ce;";
+          } else {
+            document.getElementById("loader").innerHTML = "";
+          }
         }
-      }, 200);
+      }, 500);
 
       // Network info
       var allNetworkNames = [];
       function buildNetworkDropDown() {
+        loaderInUse = true;
+        document.getElementById("loader").innerHTML = "&#xf1ce;";
         allNetworks = ipcRenderer.sendSync(
           "synchronous-message",
           "getNetworks"
@@ -64,11 +69,11 @@
           "synchronous-message",
           "getMainNetwork"
         );
-        allNetworkNames = []
+        allNetworkNames = [];
         console.log(lastNetwork);
         i = 0;
         var dropDown = document.getElementById("networkDropdown");
-        dropDown.innerHTML = ""
+        dropDown.innerHTML = "";
         while (i < allNetworks.length) {
           temp =
             "<a id='networkEntry" +
@@ -98,12 +103,17 @@
             "state:networkNoLongerValid"
           );
         }
+        loaderInUse = false;
+        document.getElementById("loader").innerHTML = "";
       }
 
       function selectNewNetwork(id) {
         idAsNumber = parseInt(id);
         newNetwork = allNetworkNames[id];
-        ipcRenderer.sendSync("synchronous-message", "set:newNetwork|" + newNetwork);
+        ipcRenderer.sendSync(
+          "synchronous-message",
+          "set:newNetwork|" + newNetwork
+        );
         buildNetworkDropDown();
 
         nameOfElm = "networkEntry" + String(idAsNumber);
@@ -150,6 +160,7 @@
       }
       if (batteryShowdStart) {
         document.getElementById("loader").innerHTML = "";
+        loaderInUse = false;
       }
 
       setInterval(function () {
