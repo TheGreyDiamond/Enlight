@@ -7,6 +7,8 @@ var aWin2 = undefined;
 
 var preLoadedAmount = 0;
 
+var networkInterfaces = [];
+
 /// !!!-----------!!!
 /// PAGE LOOKUP TABLE
 var preloadedPageLookup = {};
@@ -61,6 +63,8 @@ function createWindow() {
   win.setFullScreen(true);
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
+
+
   main = loadPage("index")
   header = loadPage("header")
 
@@ -121,16 +125,14 @@ function doneLoading() {
 function init() {
   win = createWindow();
   aWin2 = createStartupInfo();
-  //const view = new BrowserView({
-  //  webPreferences: {
-  //    nodeIntegration: true,
-  //  },
-  //})
-
-  //win.setBrowserView(view)
-  //view.setBounds({ x: 0, y: 0, width: screen.getPrimaryDisplay().size.width, height: 100 })
-  //view.webContents.loadFile('ui_templates/header.html')
-
+  sysInf.networkInterfaces(function (data) {
+    networkInterfaces = data;
+  });
+  setInterval(function(){
+    sysInf.networkInterfaces(function (data) {
+      networkInterfaces = data;
+    });
+  }, 2 * 60 * 1000) // Update network interface every 2 mins
   
   setTimeout(doneLoading, 2000);
   ipcMain.on("asynchronous-message", (event, arg) => {
@@ -155,9 +157,12 @@ function init() {
     }else if (String(arg).includes("loadOverride")) {
       event.returnValue = false;
     }else if (String(arg).includes("getNetworks")) {
-      sysInf.networkInterfaces(function (data) {
+
+      /*sysInf.networkInterfaces(function (data) {
         event.returnValue = data;
-      });
+      });*/
+      event.returnValue = networkInterfaces;
+
     }else if (String(arg).includes("set:newNetwork")) {
       fs.writeFile('usrStore/lastNetwork.data', String(arg).split("|")[1], function (err) {
         if (err) return console.log(err);
@@ -183,8 +188,15 @@ function init() {
 
       header = loadPage("header")
       toLoad = header + main;
+      console.log(toLoad)
+      const timestamp = Date.now();
       fs.writeFileSync("ui_templates/temp.html", toLoad)
+      const timestamp2 = Date.now();
       win.loadFile("ui_templates/temp.html")
+      const timestamp3 = Date.now();
+      //win.loadFile("ui_templates/header.html")
+      console.log("LOADTIMES: ", (timestamp2 - timestamp), (timestamp3 - timestamp2), (timestamp3 - timestamp))
+      
 
       event.returnValue = "";
     }else{

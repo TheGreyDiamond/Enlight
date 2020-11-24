@@ -24,7 +24,7 @@
           <i
             class="fas fa-network-wired"
             id="networkBtn"
-            onclick='document.getElementById("networkDropdown").classList.toggle("show");'
+            onclick='document.getElementById("networkDropdown").classList.toggle("show");buildNetworkDropDown();'
           ></i>
           <div id="networkDropdown" class="dropdown-content"></div>
         </network>
@@ -61,6 +61,8 @@
       function buildNetworkDropDown() {
         loaderInUse = true;
         document.getElementById("loader").innerHTML = "&#xf1ce;";
+        console.log("show loader")
+        const timestamp = Date.now();
         allNetworks = ipcRenderer.sendSync(
           "synchronous-message",
           "getNetworks"
@@ -69,6 +71,9 @@
           "synchronous-message",
           "getMainNetwork"
         );
+        const timestamp2 = Date.now();
+        console.log("Requests took" , (timestamp2 - timestamp))
+
         allNetworkNames = [];
         console.log(lastNetwork);
         i = 0;
@@ -103,6 +108,7 @@
             "state:networkNoLongerValid"
           );
         }
+        console.log("hide loader")
         loaderInUse = false;
         document.getElementById("loader").innerHTML = "";
       }
@@ -123,7 +129,10 @@
           "&#10004;"
         );
       }
-      buildNetworkDropDown();
+      //setTimeout(function(){
+      //  buildNetworkDropDown();
+      //}, 1000)
+      //
     </script>
     <script>
       // Battery info screen
@@ -161,14 +170,18 @@
         document.getElementById("loader").innerHTML = "";
         loaderInUse = false;
       }
-
-      setInterval(function () {
+      
+      function updateClock(){
         var date = new Date();
         hour = updateTime(date.getHours());
         min = updateTime(date.getMinutes());
         sec = updateTime(date.getSeconds());
         document.getElementById("clock").innerHTML =
           hour + ":" + min + ":" + sec;
+      }
+      updateClock();
+      setInterval(function () {
+        updateClock()
       }, 500);
     </script>
     <script>
@@ -185,6 +198,7 @@
         }
       };
     </script>
+
   <!--</body>
 </html>-->
 <!DOCTYPE html>
