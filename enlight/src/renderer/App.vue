@@ -5,11 +5,88 @@
 </template>
 
 <script>
-  export default {
-    name: 'enlight'
-  }
+export default {
+  name: 'enlight'
+}
 </script>
 
 <style>
-  /* CSS */
+/*@import url("./fonts/Quicksand-Regular.ttf");*/
+body,
+html {
+  margin: 0px;
+  background-color: rgb(51, 51, 51);
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: "Quicksand", sans-serif;
+  color: white;
+}
+small {
+  font-size: 10px;
+}
+
+.header-bar {
+  margin: 0px;
+  padding: 0px;
+  width: 100%;
+  height: 34px;
+  background-color: rgba(36, 36, 36, 0.9);
+}
+
+.header-clock {
+  padding: 2px;
+  padding-right: 4px;
+}
+
+.battery {
+  right: 80px;
+  position: fixed;
+  padding: 2px;
+  padding-right: 4px;
+}
+.loader1 {
+  position: fixed;
+  right: 80px;
+}
+
+.areaRight {
+  float: right;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  overflow: auto;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  right: 0px;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown a:hover {
+  background-color: #ddd;
+}
+
+.show {
+  display: block;
+}
+
+network {
+  cursor: pointer;
+}
+
+.headerIframe {
+  width: 100%;
+  border: 0px;
+  height: 2.5%;
+}
 </style>
