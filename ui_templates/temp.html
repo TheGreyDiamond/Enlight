@@ -205,5 +205,17 @@
     <h1>Sessions</h1>
     yes.
     <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.index");'>Go back</button>
+    <state>Sessionstate: <state id = "sessionStateText">unknown</state></state>
+    <script>
+      connectionStatesAsText = {"-1": "Unknown", "0": "Not connected to a session", "1": "Connecting...", "2": "Hosting", "3": "Connected", "4": "Connection failed"};
+      setInterval(function(){
+        connectionState = ipcRenderer.sendSync("synchronous-message", "SESSION:get.state");
+        document.getElementById("sessionStateText").innerHTML = connectionStatesAsText[String(connectionState)];
+      }, 1000);
+      
+    </script>
+    <button onclick='ipcRenderer.sendSync("synchronous-message", "SESSION:createNew");''>
+      Create new session
+    </button>
   </body>
 </html>

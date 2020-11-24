@@ -2,6 +2,16 @@ const { app, BrowserWindow, screen, ipcMain, BrowserView } = require("electron")
 const fs = require("fs");
 const { win32 } = require("path");
 const sysInf = require("systeminformation");
+const dgram = require("dgram");
+var server = dgram.createSocket("udp4"); 
+
+const PORT = 33333;
+const MULTICAST_ADDR = "192.168.178.255";
+server.bind(PORT, function(){
+  server.setBroadcast(true);
+  server.setMulticastTTL(128);
+  server.addMembership(MULTICAST_ADDR);
+});
 
 var aWin2 = undefined;
 
@@ -18,7 +28,20 @@ pageLookup["index"] = "index.html";
 pageLookup["session"] = "sessions.html";
 pageLookup["header"] = "header.html"
 
+/// !!!-----------!!!
+//  Session state data
+// -1 Unset/Unknown
+// 0 Not connected
+// 1 Connecting
+// 2 Connected as host
+// 3 Connected as Client
+// 4 Connection failed
 
+var sessionState = -1;
+var sessionStateGoal = -1;
+
+var mainConn = "";
+var mainNetworkInterface = undefined;
 
 for (const [key, value] of Object.entries(pageLookup)) {
   // check if the property/key is defined in the object itself, not in parent
@@ -34,6 +57,36 @@ for (const [key, value] of Object.entries(pageLookup)) {
   }
 }
 
+function prepBroadcast(){
+  runy = true
+  while(runy){
+    //console.log("INTERFACE EMPTY", networkInterfaces)
+    if(networkInterfaces.length >=1){
+      runy = false
+    }
+  }
+  console.log("Waiting done")
+
+  var Ibroad = 0;
+  var names = [];
+  while(Ibroad < networkInterfaces.length){
+    names.push(networkInterfaces[Ibroad].ifaceName)
+    Ibroad++;
+  }
+  last = fs.readFileSync("usrStore/lastNetwork.data")
+  mainConn = last.toString();
+  ind = names.indexOf(mainConn);
+  mainNetworkInterface = networkInterfaces[ind]
+  //console.info("!!!!!!!!!!!!!!!!!!!!!", mainConn, names, mainNetworkInterface)
+}
+
+function broadcastNew() {
+
+  var message = new Buffer("ENLIGHT_NEW_SESSION$" + String(mainNetworkInterface.ip4));
+  server.send(message, 0, message.length, PORT, MULTICAST_ADDR);
+  console.log("Sent " + message + " to the wire...");
+}
+
 function loadPage(name){
   load = preloadedPageLookup[name]
   if(load == undefined){
@@ -43,15 +96,6 @@ function loadPage(name){
   return(load)
 }
 
-/*
-fs.readFile('ui_templates/index.html', 'utf8', function (err,data) {
-  preLoadedAmount++;
-  if (err) {
-    return console.log(err);
-  }
-  preloadedPageLookup["index"] = data;
-});
-*/
 function createWindow() {
   const win = new BrowserWindow({
     width: screen.getPrimaryDisplay().size.width,
@@ -67,7 +111,6 @@ function createWindow() {
 
   main = loadPage("index")
   header = loadPage("header")
-
   //
   //header = fs.readFileSync("ui_templates/header.html").toString();
   toLoad = header + main;
@@ -125,15 +168,29 @@ function doneLoading() {
 function init() {
   win = createWindow();
   aWin2 = createStartupInfo();
-  sysInf.networkInterfaces(function (data) {
-    networkInterfaces = data;
-  });
   setInterval(function(){
     sysInf.networkInterfaces(function (data) {
       networkInterfaces = data;
     });
   }, 2 * 60 * 1000) // Update network interface every 2 mins
-  
+
+  sysInf.networkInterfaces(function (data) {
+    networkInterfaces = data;
+    console.log("LOOOOOOOOOOOOOOOKKKK")
+  });
+
+  setTimeout(prepBroadcast, 10)
+  //prepBroadcast();
+  sessionState = 0; // Init with no connection
+
+  // Handling sessioning
+  setInterval(function(){
+    if(sessionStateGoal == 2){
+      broadcastNew();
+      sessionState = 2;
+    }
+  }, 400)
+
   setTimeout(doneLoading, 2000);
   ipcMain.on("asynchronous-message", (event, arg) => {
     console.log(arg); // prints "ping"
@@ -141,28 +198,21 @@ function init() {
       event.reply("asynchronous-reply", sysInf.battery().hasbattery);
     }
   });
+  
 
   ipcMain.on("synchronous-message", (event, arg) => {
-    //console.log(arg) // prints "ping"
     if (String(arg).includes("hasBattery")) {
       sysInf.battery(function (data) {
         event.returnValue = data.hasbattery;
-        //event.returnValue = true
       });
     }else if (String(arg).includes("getBatteryLevel")) {
       sysInf.battery(function (data) {
-        //event.returnValue = 2
         event.returnValue = data.percent;
       });
     }else if (String(arg).includes("loadOverride")) {
       event.returnValue = false;
     }else if (String(arg).includes("getNetworks")) {
-
-      /*sysInf.networkInterfaces(function (data) {
-        event.returnValue = data;
-      });*/
       event.returnValue = networkInterfaces;
-
     }else if (String(arg).includes("set:newNetwork")) {
       fs.writeFile('usrStore/lastNetwork.data', String(arg).split("|")[1], function (err) {
         if (err) return console.log(err);
@@ -172,8 +222,9 @@ function init() {
     } else if (String(arg).includes("getMainNetwork")) {
       try{
         last = fs.readFileSync("usrStore/lastNetwork.data")
-        console.log(last.toString())
+        //console.log(last.toString())
         event.returnValue = last.toString();
+        mainConn = last.toString();
       }catch(e){
         sysInf.networkInterfaces(function (data) {
           fs.writeFileSync("usrStore/lastNetwork.data", data[0].ifaceName);
@@ -188,17 +239,21 @@ function init() {
 
       header = loadPage("header")
       toLoad = header + main;
-      console.log(toLoad)
       const timestamp = Date.now();
       fs.writeFileSync("ui_templates/temp.html", toLoad)
       const timestamp2 = Date.now();
       win.loadFile("ui_templates/temp.html")
       const timestamp3 = Date.now();
       //win.loadFile("ui_templates/header.html")
-      console.log("LOADTIMES: ", (timestamp2 - timestamp), (timestamp3 - timestamp2), (timestamp3 - timestamp))
-      
-
       event.returnValue = "";
+    }else if (String(arg).includes("SESSION:get.state")) {
+      event.returnValue = sessionState;
+
+    }else if (String(arg).includes("SESSION:createNew")) {
+      sessionState = 1;
+      sessionStateGoal = 2;
+      event.returnValue = "";
+
     }else{
       event.returnValue = "ERR:UNKNOW_CMD"
     }
