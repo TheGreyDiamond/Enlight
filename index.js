@@ -4,23 +4,52 @@ const { win32 } = require("path");
 const sysInf = require("systeminformation");
 
 var aWin2 = undefined;
-var header = undefined;
 
-header = fs.readFileSync("ui_templates/header.html").toString();
+var preLoadedAmount = 0;
 
 /// !!!-----------!!!
 /// PAGE LOOKUP TABLE
+var preloadedPageLookup = {};
+
 var pageLookup = {};
 pageLookup["index"] = "index.html";
 pageLookup["session"] = "sessions.html";
+pageLookup["header"] = "header.html"
 
-fs.readFile('ui_templates/sessions.html', 'utf8', function (err,data) {
+
+
+for (const [key, value] of Object.entries(pageLookup)) {
+  // check if the property/key is defined in the object itself, not in parent
+  if (pageLookup.hasOwnProperty(key)) {           
+      fs.readFile('ui_templates/' + value, 'utf8', function (err,data) {
+        preLoadedAmount++;
+        if (err) {
+          return console.log(err);
+        }
+        preloadedPageLookup[key] = data;
+        
+      });
+  }
+}
+
+function loadPage(name){
+  load = preloadedPageLookup[name]
+  if(load == undefined){
+    load = fs.readFileSync("ui_templates/" + pageLookup[name]).toString();
+    console.warn("Loading fallback for page " + name);
+  }
+  return(load)
+}
+
+/*
+fs.readFile('ui_templates/index.html', 'utf8', function (err,data) {
+  preLoadedAmount++;
   if (err) {
     return console.log(err);
   }
-  pageLookup["sessionPRELOAD"] = data;
+  preloadedPageLookup["index"] = data;
 });
-
+*/
 function createWindow() {
   const win = new BrowserWindow({
     width: screen.getPrimaryDisplay().size.width,
@@ -32,7 +61,10 @@ function createWindow() {
   win.setFullScreen(true);
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  main = fs.readFileSync("ui_templates/index.html").toString();
+  main = loadPage("index")
+  header = loadPage("header")
+
+  //
   //header = fs.readFileSync("ui_templates/header.html").toString();
   toLoad = header + main;
   fs.writeFileSync("ui_templates/temp.html", toLoad)
@@ -60,23 +92,29 @@ function createStartupInfo() {
 
 function doneLoading() {
   var fadeOutI = 1;
-  aWin2.webContents.executeJavaScript(
-    "document.getElementById('current').innerHTML = 'Done';"
-  );
-  var fadeIntervall = setInterval(function () {
-    try {
-      if (fadeOutI < 0) {
+  if(Object.keys(pageLookup).length == preLoadedAmount){
+    aWin2.webContents.executeJavaScript(
+      "document.getElementById('current').innerHTML = 'Done';"
+    );
+    var fadeIntervall = setInterval(function () {
+      try {
+        if (fadeOutI < 0) {
+          clearInterval(fadeIntervall);
+          aWin2.webContents.executeJavaScript("window.close()");
+        } else {
+          aWin2.setOpacity(fadeOutI);
+          fadeOutI = fadeOutI - 0.05;
+        }
+      } catch (e) {
+        console.warn("Startup window got destroyed!");
         clearInterval(fadeIntervall);
-        aWin2.webContents.executeJavaScript("window.close()");
-      } else {
-        aWin2.setOpacity(fadeOutI);
-        fadeOutI = fadeOutI - 0.05;
       }
-    } catch (e) {
-      console.warn("Startup window got destroyed!");
-      clearInterval(fadeIntervall);
-    }
-  }, 20);
+    }, 20);
+  }else{
+    console.warn("Had to reschedule load finish")
+    setTimeout(doneLoading, 200);
+  }
+  
   //aWin2.webContents.executeJavaScript("window.close()")
 }
 
@@ -141,10 +179,9 @@ function init() {
       
     }else if (String(arg).includes("PAGE:change")) {
       newPage = String(arg).split(".")[1]
-      main = pageLookup[newPage + "PRELOAD"]
-      if(main == undefined){
-        main = fs.readFileSync("ui_templates/" + pageLookup[newPage]).toString();
-      }
+      main = header = loadPage(newPage)
+
+      header = loadPage("header")
       toLoad = header + main;
       fs.writeFileSync("ui_templates/temp.html", toLoad)
       win.loadFile("ui_templates/temp.html")
