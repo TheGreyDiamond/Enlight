@@ -1,4 +1,5 @@
 const { app, BrowserWindow, screen, ipcMain, BrowserView } = require("electron");
+var Config = require('config-js');
 const fs = require("fs");
 const { win32 } = require("path");
 const sysInf = require("systeminformation");
@@ -179,6 +180,7 @@ function init() {
     networkInterfaces = data;
   });
 
+  var langs = new Config('./lang/langs_v1.js');
   
   sessionState = 0; // Init with no connection
   setTimeout(function(){
@@ -190,8 +192,13 @@ function init() {
     restApp.get('/', (req, res) => {
       res.send('Hello World! The RestFul API of Enlight is up and working!')
     })
+
     restApp.get('/api/v1/ping', (req, res) => {
       res.json({state:"Succes"});
+    })
+
+    restApp.get('/api/v1/session/info', (req, res) => {
+      res.json({state:"Succes", implementation: "Not yet implemted."});
     })
   }, 20);
 
