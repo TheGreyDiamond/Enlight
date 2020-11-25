@@ -4,14 +4,12 @@ const { win32 } = require("path");
 const sysInf = require("systeminformation");
 const dgram = require("dgram");
 var server = dgram.createSocket("udp4"); 
+const express = require('express')
+const restApp = express()
 
+const restPort = 33334;
 const PORT = 33333;
-const MULTICAST_ADDR = "192.168.178.255";
-server.bind(PORT, function(){
-  server.setBroadcast(true);
-  server.setMulticastTTL(128);
-  server.addMembership(MULTICAST_ADDR);
-});
+const MULTICAST_ADDR = "192.168.178.50";
 
 var aWin2 = undefined;
 
@@ -58,6 +56,11 @@ for (const [key, value] of Object.entries(pageLookup)) {
 }
 
 function prepBroadcast(){
+  server.bind(PORT, function(){
+    server.setBroadcast(true);
+    server.setMulticastTTL(128);
+    server.addMembership(MULTICAST_ADDR);
+  });
   runy = true
   while(runy){
     //console.log("INTERFACE EMPTY", networkInterfaces)
@@ -161,8 +164,6 @@ function doneLoading() {
     console.warn("Had to reschedule load finish")
     setTimeout(doneLoading, 200);
   }
-  
-  //aWin2.webContents.executeJavaScript("window.close()")
 }
 
 function init() {
@@ -176,12 +177,23 @@ function init() {
 
   sysInf.networkInterfaces(function (data) {
     networkInterfaces = data;
-    console.log("LOOOOOOOOOOOOOOOKKKK")
   });
 
-  setTimeout(prepBroadcast, 10)
-  //prepBroadcast();
+  
   sessionState = 0; // Init with no connection
+  setTimeout(function(){
+    console.log("Starting restfulServer API interface")
+    restApp.listen(restPort, () => {
+      console.log(`Restful is running on http://localhost:${restPort}`)
+    })
+
+    restApp.get('/', (req, res) => {
+      res.send('Hello World! The RestFul API of Enlight is up and working!')
+    })
+    restApp.get('/api/v1/ping', (req, res) => {
+      res.json({state:"Succes"});
+    })
+  }, 20);
 
   // Handling sessioning
   setInterval(function(){
@@ -250,6 +262,7 @@ function init() {
       event.returnValue = sessionState;
 
     }else if (String(arg).includes("SESSION:createNew")) {
+      setTimeout(prepBroadcast, 5)
       sessionState = 1;
       sessionStateGoal = 2;
       event.returnValue = "";
