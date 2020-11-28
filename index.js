@@ -5,7 +5,8 @@ const { win32 } = require("path");
 const sysInf = require("systeminformation");
 const dgram = require("dgram");
 var server = dgram.createSocket("udp4"); 
-const express = require('express')
+const express = require('express');
+const { time } = require("console");
 const restApp = express()
 
 const restPort = 33334;
@@ -38,6 +39,14 @@ pageLookup["header"] = "header.html"
 
 var sessionState = -1;
 var sessionStateGoal = -1;
+
+var mySession = {
+  name: "Unnamed Session",
+  joinable: true,
+  passwordProtected: false,
+  passwordHash: "",
+  members: 1
+};
 
 var mainConn = "";
 var mainNetworkInterface = undefined;
@@ -194,11 +203,11 @@ function init() {
     })
 
     restApp.get('/api/v1/ping', (req, res) => {
-      res.json({state:"Succes"});
+      res.json({state:"Succes", uptime: time.time()});
     })
 
     restApp.get('/api/v1/session/info', (req, res) => {
-      res.json({state:"Succes", implementation: "Not yet implemted."});
+      res.json({state:"Succes", name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
     })
   }, 20);
 
