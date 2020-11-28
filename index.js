@@ -60,19 +60,24 @@ var mySession = {
 var mainConn = "";
 var mainNetworkInterface = undefined;
 
-for (const [key, value] of Object.entries(pageLookup)) {
-  // check if the property/key is defined in the object itself, not in parent
-  if (pageLookup.hasOwnProperty(key)) {
-    fs.readFile("ui_templates/" + value, "utf8", function (err, data) {
-      preLoadedAmount++;
-      if (err) {
-        return console.log(err);
-      }
-      preloadedPageLookup[key] = data;
-    });
+
+// Preload all pages
+function preloadPages(){
+  for (const [key, value] of Object.entries(pageLookup)) {
+    // check if the property/key is defined in the object itself, not in parent
+    if (pageLookup.hasOwnProperty(key)) {
+      fs.readFile("ui_templates/" + value, "utf8", function (err, data) {
+        preLoadedAmount++;
+        if (err) {
+          return console.log(err);
+        }
+        preloadedPageLookup[key] = data;
+      });
+    }
   }
 }
 
+// Prepare session existence broadcast
 function prepBroadcast() {
   server.bind(PORT, function () {
     server.setBroadcast(true);
@@ -81,7 +86,6 @@ function prepBroadcast() {
   });
   runy = true;
   while (runy) {
-    //console.log("INTERFACE EMPTY", networkInterfaces)
     if (networkInterfaces.length >= 1) {
       runy = false;
     }
@@ -98,17 +102,18 @@ function prepBroadcast() {
   mainConn = last.toString();
   ind = names.indexOf(mainConn);
   mainNetworkInterface = networkInterfaces[ind];
-  //console.info("!!!!!!!!!!!!!!!!!!!!!", mainConn, names, mainNetworkInterface)
 }
 
+// Broadcasts the presence of a session
 function broadcastNew() {
-  var message = new Buffer(
+  var message = new Buffer.from(
     "ENLIGHT_NEW_SESSION$" + String(mainNetworkInterface.ip4)
   );
   server.send(message, 0, message.length, PORT, MULTICAST_ADDR);
   console.log("Sent " + message + " to the wire...");
 }
 
+// Loads a preloaded page or reads it from file
 function loadPage(name) {
   load = preloadedPageLookup[name];
   if (load == undefined) {
@@ -132,16 +137,14 @@ function createWindow() {
 
   main = loadPage("index");
   header = loadPage("header");
-  //
-  //header = fs.readFileSync("ui_templates/header.html").toString();
+
   toLoad = header + main;
   fs.writeFileSync("ui_templates/temp.html", toLoad);
-  //win.loadURL("data:text/html;charset=utf-8," + encodeURI(toLoad));
   win.loadFile("ui_templates/temp.html");
   return win;
 }
 
-function createStartupInfo() {
+function createStartupInfo() { // aka. loading screen
   const win2 = new BrowserWindow({
     width: 400,
     height: 200,
@@ -192,6 +195,8 @@ function init() {
       networkInterfaces = data;
     });
   }, 2 * 60 * 1000); // Update network interface every 2 mins
+
+  preloadPages();
 
   sysInf.networkInterfaces(function (data) {
     networkInterfaces = data;
@@ -255,11 +260,10 @@ function init() {
           code: 1,
         });
       }
-      //name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
     });
   }, 20);
 
-  // Handling sessioning
+  // Handling sessions
   setInterval(function () {
     if (sessionStateGoal == 2) {
       broadcastNew();
@@ -268,27 +272,27 @@ function init() {
   }, 400);
 
   setTimeout(doneLoading, 2000);
-  ipcMain.on("asynchronous-message", (event, arg) => {
-    console.log(arg);
-    if (arg == "hasBattery") {
-      event.reply("asynchronous-reply", sysInf.battery().hasbattery);
-    }
-  });
 
   ipcMain.on("synchronous-message", (event, arg) => {
+
     if (String(arg).includes("hasBattery")) {
+      // Retrieve if the device has a battery
       sysInf.battery(function (data) {
         event.returnValue = data.hasbattery;
       });
     } else if (String(arg).includes("getBatteryLevel")) {
+      // Retrieve device's battery level in percent
       sysInf.battery(function (data) {
         event.returnValue = data.percent;
       });
     } else if (String(arg).includes("loadOverride")) {
       event.returnValue = false;
     } else if (String(arg).includes("getNetworks")) {
+      // Retrieve all saved networks
       event.returnValue = networkInterfaces;
+
     } else if (String(arg).includes("set:newNetwork")) {
+      // Sets the new main network
       fs.writeFile(
         "usrStore/lastNetwork.data",
         String(arg).split("|")[1],
@@ -298,19 +302,25 @@ function init() {
         }
       );
       event.returnValue = "";
+
     } else if (String(arg).includes("getMainNetwork")) {
+      // Retrieves the main network definded by the user
       try {
         last = fs.readFileSync("usrStore/lastNetwork.data");
         //console.log(last.toString())
         event.returnValue = last.toString();
         mainConn = last.toString();
+
       } catch (e) {
         sysInf.networkInterfaces(function (data) {
           fs.writeFileSync("usrStore/lastNetwork.data", data[0].ifaceName);
           event.returnValue = data[0].ifaceName;
         });
       }
+
     } else if (String(arg).includes("PAGE:change")) {
+      // Change to a diffrent page of the programm
+
       newPage = String(arg).split(".")[1];
       main = header = loadPage(newPage);
 
@@ -321,11 +331,16 @@ function init() {
       const timestamp2 = Date.now();
       win.loadFile("ui_templates/temp.html");
       const timestamp3 = Date.now();
-      //win.loadFile("ui_templates/header.html")
       event.returnValue = "";
+
     } else if (String(arg).includes("SESSION:get.state")) {
+      // Retrives the session state
+
       event.returnValue = sessionState;
+
     } else if (String(arg).includes("SESSION:createNew")) {
+      // Creates a new session
+
       setTimeout(prepBroadcast, 5);
       mySession.name = String(arg).split("|")[1];
       mySession.joinable = true;
