@@ -209,6 +209,19 @@ function init() {
     restApp.get('/api/v1/session/info', (req, res) => {
       res.json({state:"Succes", name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
     })
+
+    restApp.get('/api/v1/session/join', (req, res) => {
+      if(mySession.joinable){
+        if(mySession.passwordProtected == false){
+          res.json({state: "Succes"})
+        }else{
+          res.json({state: "Failed", message: "Passwords are not yet implemented", code: -1})
+        }
+      }else{
+        res.json({state: "Failed", message: "Session is not joinable.", code: 1})
+      }
+       //name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
+    })
   }, 20);
 
   // Handling sessioning
@@ -221,7 +234,7 @@ function init() {
 
   setTimeout(doneLoading, 2000);
   ipcMain.on("asynchronous-message", (event, arg) => {
-    console.log(arg); // prints "ping"
+    console.log(arg);
     if (arg == "hasBattery") {
       event.reply("asynchronous-reply", sysInf.battery().hasbattery);
     }
