@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>index.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>index.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">const</span> {
+  app,
+  BrowserWindow,
+  screen,
+  ipcMain,
+  BrowserView,
+} = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;electron&quot;</span>);
+<span class="hljs-keyword">var</span> Config = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;config-js&quot;</span>);
+<span class="hljs-keyword">const</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;fs&quot;</span>);
+<span class="hljs-keyword">const</span> { win32 } = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;path&quot;</span>);
+<span class="hljs-keyword">const</span> sysInf = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;systeminformation&quot;</span>);
+<span class="hljs-keyword">const</span> dgram = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;dgram&quot;</span>);
+<span class="hljs-keyword">var</span> server = dgram.createSocket(<span class="hljs-string">&quot;udp4&quot;</span>);
+<span class="hljs-keyword">const</span> express = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;express&quot;</span>);
+<span class="hljs-keyword">const</span> { time } = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;console&quot;</span>);
+<span class="hljs-keyword">const</span> { nanoid } = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;nanoid&quot;</span>);
+<span class="hljs-keyword">const</span> restApp = express();
+
+<span class="hljs-keyword">const</span> restPort = <span class="hljs-number">33334</span>;
+<span class="hljs-keyword">const</span> PORT = <span class="hljs-number">33333</span>;
+<span class="hljs-keyword">const</span> MULTICAST_ADDR = <span class="hljs-string">&quot;192.168.178.50&quot;</span>;
+
+<span class="hljs-keyword">var</span> aWin2 = <span class="hljs-literal">undefined</span>;
+
+<span class="hljs-keyword">var</span> preLoadedAmount = <span class="hljs-number">0</span>;
+
+<span class="hljs-keyword">var</span> networkInterfaces = [];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>/ !!!———–!!!
+/ PAGE LOOKUP TABLE</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> preloadedPageLookup = {};
+
+<span class="hljs-keyword">var</span> pageLookup = {};
+pageLookup[<span class="hljs-string">&quot;index&quot;</span>] = <span class="hljs-string">&quot;index.html&quot;</span>;
+pageLookup[<span class="hljs-string">&quot;session&quot;</span>] = <span class="hljs-string">&quot;sessions.html&quot;</span>;
+pageLookup[<span class="hljs-string">&quot;header&quot;</span>] = <span class="hljs-string">&quot;header.html&quot;</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>/ !!!———–!!!
+ Session state data
+-1 Unset/Unknown
+0 Not connected
+1 Connecting
+2 Connected as host
+3 Connected as Client
+4 Connection failed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="hljs-keyword">var</span> sessionState = -<span class="hljs-number">1</span>;
+<span class="hljs-keyword">var</span> sessionStateGoal = -<span class="hljs-number">1</span>;
+
+<span class="hljs-keyword">var</span> mySession = {
+  <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;Unnamed Session&quot;</span>,
+  <span class="hljs-attr">joinable</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">passwordProtected</span>: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">passwordHash</span>: <span class="hljs-string">&quot;&quot;</span>,
+  <span class="hljs-attr">members</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">memberList</span>: [],
+  <span class="hljs-attr">usedUIDs</span>: [],
+};
+
+<span class="hljs-keyword">var</span> mainConn = <span class="hljs-string">&quot;&quot;</span>;
+<span class="hljs-keyword">var</span> mainNetworkInterface = <span class="hljs-literal">undefined</span>;
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> [key, value] <span class="hljs-keyword">of</span> <span class="hljs-built_in">Object</span>.entries(pageLookup)) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>check if the property/key is defined in the object itself, not in parent</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (pageLookup.hasOwnProperty(key)) {
+    fs.readFile(<span class="hljs-string">&quot;ui_templates/&quot;</span> + value, <span class="hljs-string">&quot;utf8&quot;</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, data</span>) </span>{
+      preLoadedAmount++;
+      <span class="hljs-keyword">if</span> (err) {
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.log(err);
+      }
+      preloadedPageLookup[key] = data;
+    });
+  }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">prepBroadcast</span>(<span class="hljs-params"></span>) </span>{
+  server.bind(PORT, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    server.setBroadcast(<span class="hljs-literal">true</span>);
+    server.setMulticastTTL(<span class="hljs-number">128</span>);
+    server.addMembership(MULTICAST_ADDR);
+  });
+  runy = <span class="hljs-literal">true</span>;
+  <span class="hljs-keyword">while</span> (runy) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>console.log(“INTERFACE EMPTY”, networkInterfaces)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (networkInterfaces.length &gt;= <span class="hljs-number">1</span>) {
+      runy = <span class="hljs-literal">false</span>;
+    }
+  }
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&quot;Waiting done&quot;</span>);
+
+  <span class="hljs-keyword">var</span> Ibroad = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">var</span> names = [];
+  <span class="hljs-keyword">while</span> (Ibroad &lt; networkInterfaces.length) {
+    names.push(networkInterfaces[Ibroad].ifaceName);
+    Ibroad++;
+  }
+  last = fs.readFileSync(<span class="hljs-string">&quot;usrStore/lastNetwork.data&quot;</span>);
+  mainConn = last.toString();
+  ind = names.indexOf(mainConn);
+  mainNetworkInterface = networkInterfaces[ind];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>console.info(“!!!!!!!!!!!!!!!!!!!!!”, mainConn, names, mainNetworkInterface)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">broadcastNew</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">var</span> message = <span class="hljs-keyword">new</span> Buffer(
+    <span class="hljs-string">&quot;ENLIGHT_NEW_SESSION$&quot;</span> + <span class="hljs-built_in">String</span>(mainNetworkInterface.ip4)
+  );
+  server.send(message, <span class="hljs-number">0</span>, message.length, PORT, MULTICAST_ADDR);
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&quot;Sent &quot;</span> + message + <span class="hljs-string">&quot; to the wire...&quot;</span>);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">loadPage</span>(<span class="hljs-params">name</span>) </span>{
+  load = preloadedPageLookup[name];
+  <span class="hljs-keyword">if</span> (load == <span class="hljs-literal">undefined</span>) {
+    load = fs.readFileSync(<span class="hljs-string">&quot;ui_templates/&quot;</span> + pageLookup[name]).toString();
+    <span class="hljs-built_in">console</span>.warn(<span class="hljs-string">&quot;Loading fallback for page &quot;</span> + name);
+  }
+  <span class="hljs-keyword">return</span> load;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createWindow</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">const</span> win = <span class="hljs-keyword">new</span> BrowserWindow({
+    <span class="hljs-attr">width</span>: screen.getPrimaryDisplay().size.width,
+    <span class="hljs-attr">height</span>: screen.getPrimaryDisplay().size.height,
+    <span class="hljs-attr">webPreferences</span>: {
+      <span class="hljs-attr">nodeIntegration</span>: <span class="hljs-literal">true</span>,
+    },
+  });
+  win.setFullScreen(<span class="hljs-literal">true</span>);
+  win.setMenuBarVisibility(<span class="hljs-literal">false</span>);
+  win.setAutoHideMenuBar(<span class="hljs-literal">true</span>);
+
+  main = loadPage(<span class="hljs-string">&quot;index&quot;</span>);
+  header = loadPage(<span class="hljs-string">&quot;header&quot;</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>header = fs.readFileSync(“ui_templates/header.html”).toString();</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  toLoad = header + main;
+  fs.writeFileSync(<span class="hljs-string">&quot;ui_templates/temp.html&quot;</span>, toLoad);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>win.loadURL(“data:text/html;charset=utf-8,” + encodeURI(toLoad));</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  win.loadFile(<span class="hljs-string">&quot;ui_templates/temp.html&quot;</span>);
+  <span class="hljs-keyword">return</span> win;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">createStartupInfo</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">const</span> win2 = <span class="hljs-keyword">new</span> BrowserWindow({
+    <span class="hljs-attr">width</span>: <span class="hljs-number">400</span>,
+    <span class="hljs-attr">height</span>: <span class="hljs-number">200</span>,
+    <span class="hljs-attr">frame</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">webPreferences</span>: {
+      <span class="hljs-attr">nodeIntegration</span>: <span class="hljs-literal">true</span>,
+    },
+  });
+
+  win2.setFullScreen(<span class="hljs-literal">false</span>);
+  win2.setAlwaysOnTop(<span class="hljs-literal">true</span>);
+  win2.loadFile(<span class="hljs-string">&quot;ui_templates/startUp.html&quot;</span>);
+  win2.show();
+  <span class="hljs-keyword">return</span> win2;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">doneLoading</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">var</span> fadeOutI = <span class="hljs-number">1</span>;
+  <span class="hljs-keyword">if</span> (<span class="hljs-built_in">Object</span>.keys(pageLookup).length == preLoadedAmount) {
+    aWin2.webContents.executeJavaScript(
+      <span class="hljs-string">&quot;document.getElementById(&#x27;current&#x27;).innerHTML = &#x27;Done&#x27;;&quot;</span>
+    );
+    <span class="hljs-keyword">var</span> fadeIntervall = <span class="hljs-built_in">setInterval</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+      <span class="hljs-keyword">try</span> {
+        <span class="hljs-keyword">if</span> (fadeOutI &lt; <span class="hljs-number">0</span>) {
+          <span class="hljs-built_in">clearInterval</span>(fadeIntervall);
+          aWin2.webContents.executeJavaScript(<span class="hljs-string">&quot;window.close()&quot;</span>);
+        } <span class="hljs-keyword">else</span> {
+          aWin2.setOpacity(fadeOutI);
+          fadeOutI = fadeOutI - <span class="hljs-number">0.05</span>;
+        }
+      } <span class="hljs-keyword">catch</span> (e) {
+        <span class="hljs-built_in">console</span>.warn(<span class="hljs-string">&quot;Startup window got destroyed!&quot;</span>);
+        <span class="hljs-built_in">clearInterval</span>(fadeIntervall);
+      }
+    }, <span class="hljs-number">20</span>);
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-built_in">console</span>.warn(<span class="hljs-string">&quot;Had to reschedule load finish&quot;</span>);
+    <span class="hljs-built_in">setTimeout</span>(doneLoading, <span class="hljs-number">200</span>);
+  }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">init</span>(<span class="hljs-params"></span>) </span>{
+  win = createWindow();
+  aWin2 = createStartupInfo();
+  <span class="hljs-built_in">setInterval</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    sysInf.networkInterfaces(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">data</span>) </span>{
+      networkInterfaces = data;
+    });
+  }, <span class="hljs-number">2</span> * <span class="hljs-number">60</span> * <span class="hljs-number">1000</span>); <span class="hljs-comment">// Update network interface every 2 mins</span>
+
+  sysInf.networkInterfaces(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">data</span>) </span>{
+    networkInterfaces = data;
+  });
+
+  <span class="hljs-keyword">var</span> langs = <span class="hljs-keyword">new</span> Config(<span class="hljs-string">&quot;./lang/langs_v1.js&quot;</span>);
+
+  sessionState = <span class="hljs-number">0</span>; <span class="hljs-comment">// Init with no connection</span>
+  <span class="hljs-built_in">setTimeout</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&quot;Starting restfulServer API interface&quot;</span>);
+    restApp.listen(restPort, <span class="hljs-function">() =&gt;</span> {
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`Restful is running on http://localhost:<span class="hljs-subst">${restPort}</span>`</span>);
+    });
+
+    restApp.get(<span class="hljs-string">&quot;/&quot;</span>, <span class="hljs-function">(<span class="hljs-params">req, res</span>) =&gt;</span> {
+      res.send(<span class="hljs-string">&quot;Hello World! The RestFul API of Enlight is up and working!&quot;</span>);
+    });
+
+    restApp.get(<span class="hljs-string">&quot;/api/v1/ping&quot;</span>, <span class="hljs-function">(<span class="hljs-params">req, res</span>) =&gt;</span> {
+      res.json({ <span class="hljs-attr">state</span>: <span class="hljs-string">&quot;Succes&quot;</span>, <span class="hljs-attr">uptime</span>: time.time() });
+    });
+
+    restApp.get(<span class="hljs-string">&quot;/api/v1/session/info&quot;</span>, <span class="hljs-function">(<span class="hljs-params">req, res</span>) =&gt;</span> {
+      res.json({
+        <span class="hljs-attr">state</span>: <span class="hljs-string">&quot;Succes&quot;</span>,
+        <span class="hljs-attr">name</span>: mySession.name,
+        <span class="hljs-attr">joinAble</span>: mySession.joinable,
+        <span class="hljs-attr">passwordProtected</span>: mySession.passwordProtected,
+        <span class="hljs-attr">memberAmount</span>: mySession.members,
+      });
+    });
+
+    restApp.get(<span class="hljs-string">&quot;/api/v1/session/join&quot;</span>, <span class="hljs-function">(<span class="hljs-params">req, res</span>) =&gt;</span> {
+      <span class="hljs-keyword">if</span> (mySession.joinable) {
+        <span class="hljs-keyword">if</span> (mySession.passwordProtected == <span class="hljs-literal">false</span>) {
+          uid = nanoid();
+          <span class="hljs-keyword">while</span> (mySession.usedUIDs.includes(uid)) {
+            uid = nanoid();
+          }
+
+          mySession.usedUIDs.push(uid);
+          dev = {
+            <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;client&quot;</span>,
+            <span class="hljs-attr">ip</span>: req.connection.remoteAddress,
+            <span class="hljs-attr">uid</span>: uid,
+          };
+          mySession.memberList.push();
+          mySession.members++;
+          res.json({ <span class="hljs-attr">state</span>: <span class="hljs-string">&quot;Succes&quot;</span>, <span class="hljs-attr">uid</span>: uid });
+        } <span class="hljs-keyword">else</span> {
+          res.json({
+            <span class="hljs-attr">state</span>: <span class="hljs-string">&quot;Failed&quot;</span>,
+            <span class="hljs-attr">message</span>: <span class="hljs-string">&quot;Passwords are not yet implemented&quot;</span>,
+            <span class="hljs-attr">code</span>: -<span class="hljs-number">1</span>,
+          });
+        }
+      } <span class="hljs-keyword">else</span> {
+        res.json({
+          <span class="hljs-attr">state</span>: <span class="hljs-string">&quot;Failed&quot;</span>,
+          <span class="hljs-attr">message</span>: <span class="hljs-string">&quot;Session is not joinable.&quot;</span>,
+          <span class="hljs-attr">code</span>: <span class="hljs-number">1</span>,
+        });
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    });
+  }, <span class="hljs-number">20</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Handling sessioning</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-built_in">setInterval</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">if</span> (sessionStateGoal == <span class="hljs-number">2</span>) {
+      broadcastNew();
+      sessionState = <span class="hljs-number">2</span>;
+    }
+  }, <span class="hljs-number">400</span>);
+
+  <span class="hljs-built_in">setTimeout</span>(doneLoading, <span class="hljs-number">2000</span>);
+  ipcMain.on(<span class="hljs-string">&quot;asynchronous-message&quot;</span>, <span class="hljs-function">(<span class="hljs-params">event, arg</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(arg);
+    <span class="hljs-keyword">if</span> (arg == <span class="hljs-string">&quot;hasBattery&quot;</span>) {
+      event.reply(<span class="hljs-string">&quot;asynchronous-reply&quot;</span>, sysInf.battery().hasbattery);
+    }
+  });
+
+  ipcMain.on(<span class="hljs-string">&quot;synchronous-message&quot;</span>, <span class="hljs-function">(<span class="hljs-params">event, arg</span>) =&gt;</span> {
+    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;hasBattery&quot;</span>)) {
+      sysInf.battery(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">data</span>) </span>{
+        event.returnValue = data.hasbattery;
+      });
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;getBatteryLevel&quot;</span>)) {
+      sysInf.battery(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">data</span>) </span>{
+        event.returnValue = data.percent;
+      });
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;loadOverride&quot;</span>)) {
+      event.returnValue = <span class="hljs-literal">false</span>;
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;getNetworks&quot;</span>)) {
+      event.returnValue = networkInterfaces;
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;set:newNetwork&quot;</span>)) {
+      fs.writeFile(
+        <span class="hljs-string">&quot;usrStore/lastNetwork.data&quot;</span>,
+        <span class="hljs-built_in">String</span>(arg).split(<span class="hljs-string">&quot;|&quot;</span>)[<span class="hljs-number">1</span>],
+        <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+          <span class="hljs-keyword">if</span> (err) <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.log(err);
+          <span class="hljs-built_in">console</span>.log(<span class="hljs-string">&quot;Saved new main network&quot;</span>);
+        }
+      );
+      event.returnValue = <span class="hljs-string">&quot;&quot;</span>;
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;getMainNetwork&quot;</span>)) {
+      <span class="hljs-keyword">try</span> {
+        last = fs.readFileSync(<span class="hljs-string">&quot;usrStore/lastNetwork.data&quot;</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>console.log(last.toString())</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        event.returnValue = last.toString();
+        mainConn = last.toString();
+      } <span class="hljs-keyword">catch</span> (e) {
+        sysInf.networkInterfaces(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">data</span>) </span>{
+          fs.writeFileSync(<span class="hljs-string">&quot;usrStore/lastNetwork.data&quot;</span>, data[<span class="hljs-number">0</span>].ifaceName);
+          event.returnValue = data[<span class="hljs-number">0</span>].ifaceName;
+        });
+      }
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;PAGE:change&quot;</span>)) {
+      newPage = <span class="hljs-built_in">String</span>(arg).split(<span class="hljs-string">&quot;.&quot;</span>)[<span class="hljs-number">1</span>];
+      main = header = loadPage(newPage);
+
+      header = loadPage(<span class="hljs-string">&quot;header&quot;</span>);
+      toLoad = header + main;
+      <span class="hljs-keyword">const</span> timestamp = <span class="hljs-built_in">Date</span>.now();
+      fs.writeFileSync(<span class="hljs-string">&quot;ui_templates/temp.html&quot;</span>, toLoad);
+      <span class="hljs-keyword">const</span> timestamp2 = <span class="hljs-built_in">Date</span>.now();
+      win.loadFile(<span class="hljs-string">&quot;ui_templates/temp.html&quot;</span>);
+      <span class="hljs-keyword">const</span> timestamp3 = <span class="hljs-built_in">Date</span>.now();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>win.loadFile(“ui_templates/header.html”)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      event.returnValue = <span class="hljs-string">&quot;&quot;</span>;
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;SESSION:get.state&quot;</span>)) {
+      event.returnValue = sessionState;
+    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">String</span>(arg).includes(<span class="hljs-string">&quot;SESSION:createNew&quot;</span>)) {
+      <span class="hljs-built_in">setTimeout</span>(prepBroadcast, <span class="hljs-number">5</span>);
+      mySession.name = <span class="hljs-built_in">String</span>(arg).split(<span class="hljs-string">&quot;|&quot;</span>)[<span class="hljs-number">1</span>];
+      mySession.joinable = <span class="hljs-literal">true</span>;
+      sessionState = <span class="hljs-number">1</span>;
+      sessionStateGoal = <span class="hljs-number">2</span>;
+      event.returnValue = <span class="hljs-string">&quot;&quot;</span>;
+    } <span class="hljs-keyword">else</span> {
+      event.returnValue = <span class="hljs-string">&quot;ERR:UNKNOW_CMD&quot;</span>;
+    }
+  });
+}
+
+app.whenReady().then(init);
+
+app.on(<span class="hljs-string">&quot;window-all-closed&quot;</span>, <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">if</span> (process.platform !== <span class="hljs-string">&quot;darwin&quot;</span>) {
+    app.quit();
+  }
+});
+
+app.on(<span class="hljs-string">&quot;activate&quot;</span>, <span class="hljs-function">() =&gt;</span> {
+  <span class="hljs-keyword">if</span> (BrowserWindow.getAllWindows().length === <span class="hljs-number">0</span>) {
+    createWindow();
+  }
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
