@@ -1,13 +1,20 @@
-const { app, BrowserWindow, screen, ipcMain, BrowserView } = require("electron");
-var Config = require('config-js');
+const {
+  app,
+  BrowserWindow,
+  screen,
+  ipcMain,
+  BrowserView,
+} = require("electron");
+var Config = require("config-js");
 const fs = require("fs");
 const { win32 } = require("path");
 const sysInf = require("systeminformation");
 const dgram = require("dgram");
-var server = dgram.createSocket("udp4"); 
-const express = require('express');
+var server = dgram.createSocket("udp4");
+const express = require("express");
 const { time } = require("console");
-const restApp = express()
+const { nanoid } = require("nanoid");
+const restApp = express();
 
 const restPort = 33334;
 const PORT = 33333;
@@ -26,7 +33,7 @@ var preloadedPageLookup = {};
 var pageLookup = {};
 pageLookup["index"] = "index.html";
 pageLookup["session"] = "sessions.html";
-pageLookup["header"] = "header.html"
+pageLookup["header"] = "header.html";
 
 /// !!!-----------!!!
 //  Session state data
@@ -42,10 +49,12 @@ var sessionStateGoal = -1;
 
 var mySession = {
   name: "Unnamed Session",
-  joinable: true,
+  joinable: false,
   passwordProtected: false,
   passwordHash: "",
-  members: 1
+  members: 1,
+  memberList: [],
+  usedUIDs: [],
 };
 
 var mainConn = "";
@@ -53,60 +62,60 @@ var mainNetworkInterface = undefined;
 
 for (const [key, value] of Object.entries(pageLookup)) {
   // check if the property/key is defined in the object itself, not in parent
-  if (pageLookup.hasOwnProperty(key)) {           
-      fs.readFile('ui_templates/' + value, 'utf8', function (err,data) {
-        preLoadedAmount++;
-        if (err) {
-          return console.log(err);
-        }
-        preloadedPageLookup[key] = data;
-        
-      });
+  if (pageLookup.hasOwnProperty(key)) {
+    fs.readFile("ui_templates/" + value, "utf8", function (err, data) {
+      preLoadedAmount++;
+      if (err) {
+        return console.log(err);
+      }
+      preloadedPageLookup[key] = data;
+    });
   }
 }
 
-function prepBroadcast(){
-  server.bind(PORT, function(){
+function prepBroadcast() {
+  server.bind(PORT, function () {
     server.setBroadcast(true);
     server.setMulticastTTL(128);
     server.addMembership(MULTICAST_ADDR);
   });
-  runy = true
-  while(runy){
+  runy = true;
+  while (runy) {
     //console.log("INTERFACE EMPTY", networkInterfaces)
-    if(networkInterfaces.length >=1){
-      runy = false
+    if (networkInterfaces.length >= 1) {
+      runy = false;
     }
   }
-  console.log("Waiting done")
+  console.log("Waiting done");
 
   var Ibroad = 0;
   var names = [];
-  while(Ibroad < networkInterfaces.length){
-    names.push(networkInterfaces[Ibroad].ifaceName)
+  while (Ibroad < networkInterfaces.length) {
+    names.push(networkInterfaces[Ibroad].ifaceName);
     Ibroad++;
   }
-  last = fs.readFileSync("usrStore/lastNetwork.data")
+  last = fs.readFileSync("usrStore/lastNetwork.data");
   mainConn = last.toString();
   ind = names.indexOf(mainConn);
-  mainNetworkInterface = networkInterfaces[ind]
+  mainNetworkInterface = networkInterfaces[ind];
   //console.info("!!!!!!!!!!!!!!!!!!!!!", mainConn, names, mainNetworkInterface)
 }
 
 function broadcastNew() {
-
-  var message = new Buffer("ENLIGHT_NEW_SESSION$" + String(mainNetworkInterface.ip4));
+  var message = new Buffer(
+    "ENLIGHT_NEW_SESSION$" + String(mainNetworkInterface.ip4)
+  );
   server.send(message, 0, message.length, PORT, MULTICAST_ADDR);
   console.log("Sent " + message + " to the wire...");
 }
 
-function loadPage(name){
-  load = preloadedPageLookup[name]
-  if(load == undefined){
+function loadPage(name) {
+  load = preloadedPageLookup[name];
+  if (load == undefined) {
     load = fs.readFileSync("ui_templates/" + pageLookup[name]).toString();
     console.warn("Loading fallback for page " + name);
   }
-  return(load)
+  return load;
 }
 
 function createWindow() {
@@ -121,16 +130,15 @@ function createWindow() {
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
 
-
-  main = loadPage("index")
-  header = loadPage("header")
+  main = loadPage("index");
+  header = loadPage("header");
   //
   //header = fs.readFileSync("ui_templates/header.html").toString();
   toLoad = header + main;
-  fs.writeFileSync("ui_templates/temp.html", toLoad)
+  fs.writeFileSync("ui_templates/temp.html", toLoad);
   //win.loadURL("data:text/html;charset=utf-8," + encodeURI(toLoad));
-  win.loadFile("ui_templates/temp.html")
-  return(win)
+  win.loadFile("ui_templates/temp.html");
+  return win;
 }
 
 function createStartupInfo() {
@@ -152,7 +160,7 @@ function createStartupInfo() {
 
 function doneLoading() {
   var fadeOutI = 1;
-  if(Object.keys(pageLookup).length == preLoadedAmount){
+  if (Object.keys(pageLookup).length == preLoadedAmount) {
     aWin2.webContents.executeJavaScript(
       "document.getElementById('current').innerHTML = 'Done';"
     );
@@ -170,8 +178,8 @@ function doneLoading() {
         clearInterval(fadeIntervall);
       }
     }, 20);
-  }else{
-    console.warn("Had to reschedule load finish")
+  } else {
+    console.warn("Had to reschedule load finish");
     setTimeout(doneLoading, 200);
   }
 }
@@ -179,58 +187,85 @@ function doneLoading() {
 function init() {
   win = createWindow();
   aWin2 = createStartupInfo();
-  setInterval(function(){
+  setInterval(function () {
     sysInf.networkInterfaces(function (data) {
       networkInterfaces = data;
     });
-  }, 2 * 60 * 1000) // Update network interface every 2 mins
+  }, 2 * 60 * 1000); // Update network interface every 2 mins
 
   sysInf.networkInterfaces(function (data) {
     networkInterfaces = data;
   });
 
-  var langs = new Config('./lang/langs_v1.js');
-  
+  var langs = new Config("./lang/langs_v1.js");
+
   sessionState = 0; // Init with no connection
-  setTimeout(function(){
-    console.log("Starting restfulServer API interface")
+  setTimeout(function () {
+    console.log("Starting restfulServer API interface");
     restApp.listen(restPort, () => {
-      console.log(`Restful is running on http://localhost:${restPort}`)
-    })
+      console.log(`Restful is running on http://localhost:${restPort}`);
+    });
 
-    restApp.get('/', (req, res) => {
-      res.send('Hello World! The RestFul API of Enlight is up and working!')
-    })
+    restApp.get("/", (req, res) => {
+      res.send("Hello World! The RestFul API of Enlight is up and working!");
+    });
 
-    restApp.get('/api/v1/ping', (req, res) => {
-      res.json({state:"Succes", uptime: time.time()});
-    })
+    restApp.get("/api/v1/ping", (req, res) => {
+      res.json({ state: "Succes", uptime: time.time() });
+    });
 
-    restApp.get('/api/v1/session/info', (req, res) => {
-      res.json({state:"Succes", name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
-    })
+    restApp.get("/api/v1/session/info", (req, res) => {
+      res.json({
+        state: "Succes",
+        name: mySession.name,
+        joinAble: mySession.joinable,
+        passwordProtected: mySession.passwordProtected,
+        memberAmount: mySession.members,
+      });
+    });
 
-    restApp.get('/api/v1/session/join', (req, res) => {
-      if(mySession.joinable){
-        if(mySession.passwordProtected == false){
-          res.json({state: "Succes"})
-        }else{
-          res.json({state: "Failed", message: "Passwords are not yet implemented", code: -1})
+    restApp.get("/api/v1/session/join", (req, res) => {
+      if (mySession.joinable) {
+        if (mySession.passwordProtected == false) {
+          uid = nanoid();
+          while (mySession.usedUIDs.includes(uid)) {
+            uid = nanoid();
+          }
+
+          mySession.usedUIDs.push(uid);
+          dev = {
+            type: "client",
+            ip: req.connection.remoteAddress,
+            uid: uid,
+          };
+          mySession.memberList.push();
+          mySession.members++;
+          res.json({ state: "Succes", uid: uid });
+        } else {
+          res.json({
+            state: "Failed",
+            message: "Passwords are not yet implemented",
+            code: -1,
+          });
         }
-      }else{
-        res.json({state: "Failed", message: "Session is not joinable.", code: 1})
+      } else {
+        res.json({
+          state: "Failed",
+          message: "Session is not joinable.",
+          code: 1,
+        });
       }
-       //name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
-    })
+      //name: mySession.name, joinAble: mySession.joinable, passwordProtected: mySession.passwordProtected});
+    });
   }, 20);
 
   // Handling sessioning
-  setInterval(function(){
-    if(sessionStateGoal == 2){
+  setInterval(function () {
+    if (sessionStateGoal == 2) {
       broadcastNew();
       sessionState = 2;
     }
-  }, 400)
+  }, 400);
 
   setTimeout(doneLoading, 2000);
   ipcMain.on("asynchronous-message", (event, arg) => {
@@ -239,65 +274,66 @@ function init() {
       event.reply("asynchronous-reply", sysInf.battery().hasbattery);
     }
   });
-  
 
   ipcMain.on("synchronous-message", (event, arg) => {
     if (String(arg).includes("hasBattery")) {
       sysInf.battery(function (data) {
         event.returnValue = data.hasbattery;
       });
-    }else if (String(arg).includes("getBatteryLevel")) {
+    } else if (String(arg).includes("getBatteryLevel")) {
       sysInf.battery(function (data) {
         event.returnValue = data.percent;
       });
-    }else if (String(arg).includes("loadOverride")) {
+    } else if (String(arg).includes("loadOverride")) {
       event.returnValue = false;
-    }else if (String(arg).includes("getNetworks")) {
+    } else if (String(arg).includes("getNetworks")) {
       event.returnValue = networkInterfaces;
-    }else if (String(arg).includes("set:newNetwork")) {
-      fs.writeFile('usrStore/lastNetwork.data', String(arg).split("|")[1], function (err) {
-        if (err) return console.log(err);
-        console.log('Saved new main network');
-      });
+    } else if (String(arg).includes("set:newNetwork")) {
+      fs.writeFile(
+        "usrStore/lastNetwork.data",
+        String(arg).split("|")[1],
+        function (err) {
+          if (err) return console.log(err);
+          console.log("Saved new main network");
+        }
+      );
       event.returnValue = "";
     } else if (String(arg).includes("getMainNetwork")) {
-      try{
-        last = fs.readFileSync("usrStore/lastNetwork.data")
+      try {
+        last = fs.readFileSync("usrStore/lastNetwork.data");
         //console.log(last.toString())
         event.returnValue = last.toString();
         mainConn = last.toString();
-      }catch(e){
+      } catch (e) {
         sysInf.networkInterfaces(function (data) {
           fs.writeFileSync("usrStore/lastNetwork.data", data[0].ifaceName);
-          event.returnValue = data[0].ifaceName
+          event.returnValue = data[0].ifaceName;
         });
-       
       }
-      
-    }else if (String(arg).includes("PAGE:change")) {
-      newPage = String(arg).split(".")[1]
-      main = header = loadPage(newPage)
+    } else if (String(arg).includes("PAGE:change")) {
+      newPage = String(arg).split(".")[1];
+      main = header = loadPage(newPage);
 
-      header = loadPage("header")
+      header = loadPage("header");
       toLoad = header + main;
       const timestamp = Date.now();
-      fs.writeFileSync("ui_templates/temp.html", toLoad)
+      fs.writeFileSync("ui_templates/temp.html", toLoad);
       const timestamp2 = Date.now();
-      win.loadFile("ui_templates/temp.html")
+      win.loadFile("ui_templates/temp.html");
       const timestamp3 = Date.now();
       //win.loadFile("ui_templates/header.html")
       event.returnValue = "";
-    }else if (String(arg).includes("SESSION:get.state")) {
+    } else if (String(arg).includes("SESSION:get.state")) {
       event.returnValue = sessionState;
-
-    }else if (String(arg).includes("SESSION:createNew")) {
-      setTimeout(prepBroadcast, 5)
+    } else if (String(arg).includes("SESSION:createNew")) {
+      setTimeout(prepBroadcast, 5);
+      mySession.name = String(arg).split("|")[1];
+      mySession.joinable = true;
       sessionState = 1;
       sessionStateGoal = 2;
       event.returnValue = "";
-
-    }else{
-      event.returnValue = "ERR:UNKNOW_CMD"
+    } else {
+      event.returnValue = "ERR:UNKNOW_CMD";
     }
   });
 }

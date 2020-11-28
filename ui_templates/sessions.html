@@ -11,8 +11,20 @@
       }, 1000);
       
     </script>
-    <button onclick='ipcRenderer.sendSync("synchronous-message", "SESSION:createNew");''>
+    Name: <input type="text" value="Unnamed session" id="sessionName">
+    <button onclick='createNewSession()'>
       Create new session
     </button>
+    <script>
+      function createNewSession() {
+        val = document.getElementById("sessionName").value
+        if (val.indexOf('|') > -1)
+        {
+          alert("Your Sessionname may not contain a |");
+        }
+        console.log(val)
+        ipcRenderer.sendSync("synchronous-message", "SESSION:createNew| " + val);
+      }
+    </script>
   </body>
 </html>
