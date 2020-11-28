@@ -177,6 +177,7 @@ function doneLoading() {
           fadeOutI = fadeOutI - 0.05;
         }
       } catch (e) {
+        // Happens if the user Alt + F4s the startup window
         console.warn("Startup window got destroyed!");
         clearInterval(fadeIntervall);
       }
