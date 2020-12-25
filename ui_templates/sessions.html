@@ -4,7 +4,7 @@
     <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.index");'>Go back</button>
     <state>Sessionstate: <state id = "sessionStateText">unknown</state></state>
     <script>
-      connectionStatesAsText = {"-1": "Unknown", "0": "Not connected to a session", "1": "Connecting...", "2": "Hosting", "3": "Connected", "4": "Connection failed"};
+      connectionStatesAsText = {"-1": "Unknown", "0": "Not connected to a session", "1": "Connecting...", "2": "Hosting", "3": "Connected", "4": "Connection failed", "5": "Seraching"};
       setInterval(function(){
         connectionState = ipcRenderer.sendSync("synchronous-message", "SESSION:get.state");
         document.getElementById("sessionStateText").innerHTML = connectionStatesAsText[String(connectionState)];
@@ -14,6 +14,9 @@
     Name: <input type="text" value="Unnamed session" id="sessionName">
     <button onclick='createNewSession()'>
       Create new session
+    </button>
+    <button onclick='ipcRenderer.sendSync("synchronous-message", "SESSION:startSearch");'>
+      Start session search
     </button>
     <script>
       function createNewSession() {

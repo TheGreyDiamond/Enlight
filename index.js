@@ -11,6 +11,7 @@ const { win32 } = require("path");
 const sysInf = require("systeminformation");
 const dgram = require("dgram");
 var server = dgram.createSocket("udp4");
+var client = dgram.createSocket("udp4");
 const express = require("express");
 const { time } = require("console");
 const { nanoid } = require("nanoid");
@@ -43,6 +44,7 @@ pageLookup["header"] = "header.html";
 // 2 Connected as host
 // 3 Connected as Client
 // 4 Connection failed
+// 5 Searching
 
 var sessionState = -1;
 var sessionStateGoal = -1;
@@ -347,6 +349,25 @@ function init() {
       mySession.joinable = true;
       sessionState = 1;
       sessionStateGoal = 2;
+      event.returnValue = "";
+    } else if(String(arg).includes("SESSION:startSearch")){
+      console.log("starting search")
+        client.bind(PORT);
+
+        client.on('listening', function () {
+          console.log("look")
+          // Get and print udp server listening ip address and port number in log console. 
+          var address = client.address(); 
+          console.log('UDP client started and listening on ' + address.address + ":" + address.port);
+      });
+
+      client.on("message", function (message) {
+        // Create output message.
+        var output = "Udp server receive message : " + message + "\n";
+        // Print received message in stdout, here is log console.
+        console.log(output)
+    });
+      sessionState = 5;
       event.returnValue = "";
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
