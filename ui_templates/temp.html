@@ -231,6 +231,8 @@
         console.log(val)
         ipcRenderer.sendSync("synchronous-message", "SESSION:createNew| " + val);
       }
+
+      setInterval(function(){console.log(ipcRenderer.sendSync("synchronous-message", "SESSION:getAll" ));}, 5000)
     </script>
   </body>
 </html>

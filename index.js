@@ -73,6 +73,7 @@ var mySession = {
 var mainConn = "";
 var mainNetworkInterface = undefined;
 
+var knownSessions = {};
 
 // Preload all pages
 function preloadPages(){
@@ -110,15 +111,6 @@ function prepBroadcast() {
   mainConn = last.toString();
   ind = names.indexOf(mainConn);
   mainNetworkInterface = networkInterfaces[ind];
-}
-
-// Broadcasts the presence of a session
-function broadcastNewOff() {
-  var message = new Buffer.from(
-    "ENLIGHT_NEW_SESSION$" + String(mainNetworkInterface.ip4)
-  );
-  server.send(message, 0, message.length, PORT, MULTICAST_ADDR);
-  console.log("Sent " + message + " to the wire...");
 }
 
 // Loads a preloaded page or reads it from file
@@ -228,12 +220,16 @@ function init() {
       // service.name, service.host and service.port are always filled
       console.log("A new service was announced", serviceInfo.service);
       // List currently known services
-      console.log("All known services", diont.getServiceInfos());
+      console.log("All known services", serviceInfo.service);
+      knownSessions.push(diont.getServiceInfos())
+      console.log("Known to me sessions: ", knownSessions)
     });
     
     diont.on("serviceRenounced", function(serviceInfo) {
       console.log("A service was renounced", serviceInfo.service);
       console.log("All known services", diont.getServiceInfos());
+      knownSessions.push(serviceInfo.service)
+      console.log("Known to me sessions: ", knownSessions)
     });
 
 
@@ -369,7 +365,14 @@ function init() {
       sessionState = 2;
       sessionStateGoal = 2;
       event.returnValue = "";
+
+      sessionAnn = setInterval(function() {
+        console.log("announce")
+        diont.announceService(service);
+      }, 10000);
+
       sessionReAnn = setInterval(function() {
+        console.log("REANNOUCNE")
         diont.renounceService(service);
       }, 5000);
 
@@ -378,6 +381,11 @@ function init() {
       
       sessionState = 5;
       event.returnValue = "";
+    } else if(String(arg).includes("SESSION:getAll")){
+      console.log("GET ALL SESSION")
+      event.returnValue = knownSessions
+      console.log(knownSessions)
+      console.log("GET ALL SESSIOON DONE")
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
     }
