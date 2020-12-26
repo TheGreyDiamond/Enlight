@@ -75,6 +75,24 @@ var mainNetworkInterface = undefined;
 
 var knownSessions = {};
 
+diont.on("serviceAnnounced", function(serviceInfo) {
+  console.log("A new service was announced", serviceInfo.service);
+  // List currently known services
+  console.log("All known services", serviceInfo.service);
+  //knownSessions.push(serviceInfo.service)
+  console.log("Known to me sessions: ", knownSessions)
+  console.warn(serviceInfo.service)
+});
+
+diont.on("serviceRenounced", function(serviceInfo) {
+  console.log("A service was renounced", serviceInfo.service);
+  console.log("All known services", diont.getServiceInfos());
+  //knownSessions.push(serviceInfo.service)
+  console.log("Known to me sessions: ", knownSessions)
+});
+
+
+
 // Preload all pages
 function preloadPages(){
   for (const [key, value] of Object.entries(pageLookup)) {
@@ -213,25 +231,7 @@ function init() {
       console.log(`Restful is running on http://localhost:${restPort}`);
     });
 
-    diont.on("serviceAnnounced", function(serviceInfo) {
-      // A service was announced
-      // This function triggers for services not yet available in diont.getServiceInfos()
-      // serviceInfo is an Object { isOurService : Boolean, service: Object }
-      // service.name, service.host and service.port are always filled
-      console.log("A new service was announced", serviceInfo.service);
-      // List currently known services
-      console.log("All known services", serviceInfo.service);
-      knownSessions.push(diont.getServiceInfos())
-      console.log("Known to me sessions: ", knownSessions)
-    });
     
-    diont.on("serviceRenounced", function(serviceInfo) {
-      console.log("A service was renounced", serviceInfo.service);
-      console.log("All known services", diont.getServiceInfos());
-      knownSessions.push(serviceInfo.service)
-      console.log("Known to me sessions: ", knownSessions)
-    });
-
 
     restApp.get("/", (req, res) => {
       res.send("Hello World! The RestFul API of Enlight is up and working!");
