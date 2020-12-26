@@ -16,6 +16,7 @@ const express = require("express");
 const { time } = require("console");
 const { nanoid } = require("nanoid");
 const restApp = express();
+const diont = require('diont')();
 
 const restPort = 33334;
 const PORT = 33333;
@@ -45,6 +46,16 @@ pageLookup["header"] = "header.html";
 // 3 Connected as Client
 // 4 Connection failed
 // 5 Searching
+
+var service = {
+	name: "Enlight Default Session",
+	host: "127.0.0.1", // when omitted, defaults to the local IP
+  port: PORT,
+  memberCount: 0
+	// any additional information is allowed and will be propagated
+};
+
+
 
 var sessionState = -1;
 var sessionStateGoal = -1;
@@ -81,11 +92,6 @@ function preloadPages(){
 
 // Prepare session existence broadcast
 function prepBroadcast() {
-  server.bind(PORT, function () {
-    server.setBroadcast(true);
-    server.setMulticastTTL(128);
-    server.addMembership(MULTICAST_ADDR);
-  });
   runy = true;
   while (runy) {
     if (networkInterfaces.length >= 1) {
@@ -107,7 +113,7 @@ function prepBroadcast() {
 }
 
 // Broadcasts the presence of a session
-function broadcastNew() {
+function broadcastNewOff() {
   var message = new Buffer.from(
     "ENLIGHT_NEW_SESSION$" + String(mainNetworkInterface.ip4)
   );
@@ -204,6 +210,7 @@ function init() {
   sysInf.networkInterfaces(function (data) {
     networkInterfaces = data;
   });
+  setTimeout(prepBroadcast, 200)
 
   var langs = new Config("./lang/langs_v1.js");
 
@@ -213,6 +220,22 @@ function init() {
     restApp.listen(restPort, () => {
       console.log(`Restful is running on http://localhost:${restPort}`);
     });
+
+    diont.on("serviceAnnounced", function(serviceInfo) {
+      // A service was announced
+      // This function triggers for services not yet available in diont.getServiceInfos()
+      // serviceInfo is an Object { isOurService : Boolean, service: Object }
+      // service.name, service.host and service.port are always filled
+      console.log("A new service was announced", serviceInfo.service);
+      // List currently known services
+      console.log("All known services", diont.getServiceInfos());
+    });
+    
+    diont.on("serviceRenounced", function(serviceInfo) {
+      console.log("A service was renounced", serviceInfo.service);
+      console.log("All known services", diont.getServiceInfos());
+    });
+
 
     restApp.get("/", (req, res) => {
       res.send("Hello World! The RestFul API of Enlight is up and working!");
@@ -248,6 +271,7 @@ function init() {
           };
           mySession.memberList.push();
           mySession.members++;
+          service.memberCount++;
           res.json({ state: "Succes", uid: uid });
         } else {
           res.json({
@@ -265,14 +289,6 @@ function init() {
       }
     });
   }, 20);
-
-  // Handling sessions
-  setInterval(function () {
-    if (sessionStateGoal == 2) {
-      broadcastNew();
-      sessionState = 2;
-    }
-  }, 400);
 
   setTimeout(doneLoading, 2000);
 
@@ -343,30 +359,23 @@ function init() {
 
     } else if (String(arg).includes("SESSION:createNew")) {
       // Creates a new session
-
-      setTimeout(prepBroadcast, 5);
+      service.host = mainNetworkInterface.ip4
       mySession.name = String(arg).split("|")[1];
+      service.name = String(arg).split("|")[1];
+      console.log("Annouce start")
+      diont.announceService(service);
+      console.log("Annouce done")
       mySession.joinable = true;
-      sessionState = 1;
+      sessionState = 2;
       sessionStateGoal = 2;
       event.returnValue = "";
+      sessionReAnn = setInterval(function() {
+        diont.renounceService(service);
+      }, 5000);
+
     } else if(String(arg).includes("SESSION:startSearch")){
       console.log("starting search")
-        client.bind(PORT);
-
-        client.on('listening', function () {
-          console.log("look")
-          // Get and print udp server listening ip address and port number in log console. 
-          var address = client.address(); 
-          console.log('UDP client started and listening on ' + address.address + ":" + address.port);
-      });
-
-      client.on("message", function (message) {
-        // Create output message.
-        var output = "Udp server receive message : " + message + "\n";
-        // Print received message in stdout, here is log console.
-        console.log(output)
-    });
+      
       sessionState = 5;
       event.returnValue = "";
     } else {

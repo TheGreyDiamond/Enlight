@@ -22,6 +22,7 @@
   "homepage": "https://github.com/TheGreyDiamond/Enlight#readme",
   "dependencies": {
     "config-js": "^1.1.14",
+    "diont": "^0.9.7",
     "ejs": "^3.1.5",
     "electron": "^11.0.2",
     "express": "^4.17.1",
