@@ -375,7 +375,9 @@ function init() {
       sessionState = 2;
       sessionStateGoal = 2;
       event.returnValue = "";
-
+      sessionReAnn = setInterval(function () {
+        diont.announceService(service);
+      }, 10000);
       sessionReAnn = setInterval(function () {
         diont.renounceService(service);
       }, 5000);
