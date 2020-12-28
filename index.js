@@ -9,14 +9,11 @@ var Config = require("config-js");
 const fs = require("fs");
 const { win32 } = require("path");
 const sysInf = require("systeminformation");
-const dgram = require("dgram");
-var server = dgram.createSocket("udp4");
-var client = dgram.createSocket("udp4");
 const express = require("express");
 const { time } = require("console");
 const { nanoid } = require("nanoid");
 const restApp = express();
-const diont = require('diont')();
+const diont = require("diont")();
 
 const restPort = 33334;
 const PORT = 33333;
@@ -48,14 +45,13 @@ pageLookup["header"] = "header.html";
 // 5 Searching
 
 var service = {
-	name: "Enlight Default Session",
-	host: "127.0.0.1", // when omitted, defaults to the local IP
+  name: "Enlight Default Session",
+  host: "127.0.0.1", // when omitted, defaults to the local IP
   port: PORT,
-  memberCount: 0
-	// any additional information is allowed and will be propagated
+  memberCount: 1,
+  UUID: ""
+  // any additional information is allowed and will be propagated
 };
-
-
 
 var sessionState = -1;
 var sessionStateGoal = -1;
@@ -73,23 +69,23 @@ var mySession = {
 var mainConn = "";
 var mainNetworkInterface = undefined;
 
-var knownSessions = [];
+//var knownSessions = [];
+var knownSessionsByUUID = {};
 
-diont.on("serviceAnnounced", function(serviceInfo) {
+diont.on("serviceAnnounced", function (serviceInfo) {
   console.log("A new session was announced", serviceInfo.service);
   // List currently known services
-  knownSessions.push(serviceInfo.service)
+  //knownSessions.push(serviceInfo.service);
+  knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service
 });
 
-diont.on("serviceRenounced", function(serviceInfo) {
+diont.on("serviceRenounced", function (serviceInfo) {
   //console.log("A session was renounced", serviceInfo.service);
-  knownSessions.push(serviceInfo.service)
+  knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service
 });
-
-
 
 // Preload all pages
-function preloadPages(){
+function preloadPages() {
   for (const [key, value] of Object.entries(pageLookup)) {
     // check if the property/key is defined in the object itself, not in parent
     if (pageLookup.hasOwnProperty(key)) {
@@ -157,7 +153,8 @@ function createWindow() {
   return win;
 }
 
-function createStartupInfo() { // aka. loading screen
+function createStartupInfo() {
+  // aka. loading screen
   const win2 = new BrowserWindow({
     width: 400,
     height: 200,
@@ -215,7 +212,7 @@ function init() {
   sysInf.networkInterfaces(function (data) {
     networkInterfaces = data;
   });
-  setTimeout(prepBroadcast, 200)
+  setTimeout(prepBroadcast, 200);
 
   var langs = new Config("./lang/langs_v1.js");
 
@@ -225,8 +222,6 @@ function init() {
     restApp.listen(restPort, () => {
       console.log(`Restful is running on http://localhost:${restPort}`);
     });
-
-    
 
     restApp.get("/", (req, res) => {
       res.send("Hello World! The RestFul API of Enlight is up and working!");
@@ -284,7 +279,6 @@ function init() {
   setTimeout(doneLoading, 2000);
 
   ipcMain.on("synchronous-message", (event, arg) => {
-
     if (String(arg).includes("hasBattery")) {
       // Retrieve if the device has a battery
       sysInf.battery(function (data) {
@@ -300,7 +294,6 @@ function init() {
     } else if (String(arg).includes("getNetworks")) {
       // Retrieve all saved networks
       event.returnValue = networkInterfaces;
-
     } else if (String(arg).includes("set:newNetwork")) {
       // Sets the new main network
       fs.writeFile(
@@ -312,7 +305,6 @@ function init() {
         }
       );
       event.returnValue = "";
-
     } else if (String(arg).includes("getMainNetwork")) {
       // Retrieves the main network definded by the user
       try {
@@ -320,14 +312,12 @@ function init() {
         //console.log(last.toString())
         event.returnValue = last.toString();
         mainConn = last.toString();
-
       } catch (e) {
         sysInf.networkInterfaces(function (data) {
           fs.writeFileSync("usrStore/lastNetwork.data", data[0].ifaceName);
           event.returnValue = data[0].ifaceName;
         });
       }
-
     } else if (String(arg).includes("PAGE:change")) {
       // Change to a diffrent page of the programm
 
@@ -342,45 +332,64 @@ function init() {
       win.loadFile("ui_templates/temp.html");
       const timestamp3 = Date.now();
       event.returnValue = "";
-
     } else if (String(arg).includes("SESSION:get.state")) {
       // Retrives the session state
 
       event.returnValue = sessionState;
-
     } else if (String(arg).includes("SESSION:createNew")) {
       // Creates a new session
-      service.host = mainNetworkInterface.ip4
+      i = 0;
+      sessinUids = Object.keys(knownSessionsByUUID);
+      // Make sure its a unique (at least to me) UUID
+      rounds = 0;
+      uidSes = nanoid();
+      while (sessinUids.includes(uidSes)) {
+        uidSes = nanoid();
+        rounds++;
+        if(rounds >= 10000){
+          // This takes a lot of rounds, there are two possible reasons to this: 
+          // A lot of sessions or a broken nanoid() random generation
+          console.warn("It takes very long to find a unique session UUID")
+        }
+        if(rounds >= 40000){
+          // Okay, no. We shall give up now. Something is very, very wrong here.
+          console.error("Took to long to find a session UUID")
+          sessionState = 4;
+          return("")
+        }
+      }
+
+      service.UUID = uidSes;
+      service.host = mainNetworkInterface.ip4;
       mySession.name = String(arg).split("|")[1];
       service.name = String(arg).split("|")[1];
-      console.log("Annouce start")
+      console.log("Annouce start");
       diont.announceService(service);
-      console.log("Annouce done")
+      console.log("Annouce done");
       mySession.joinable = true;
       sessionState = 2;
       sessionStateGoal = 2;
       event.returnValue = "";
 
-      sessionAnn = setInterval(function() {
-        console.log("announce")
+      sessionAnn = setInterval(function () {
+        console.log("announce");
         diont.announceService(service);
       }, 10000);
 
-      sessionReAnn = setInterval(function() {
-        console.log("REANNOUCNE")
+      sessionReAnn = setInterval(function () {
+        console.log("REANNOUCNE");
         diont.renounceService(service);
       }, 5000);
+    } else if (String(arg).includes("SESSION:startSearch")) {
+      console.log("starting search");
 
-    } else if(String(arg).includes("SESSION:startSearch")){
-      console.log("starting search")
-      
       sessionState = 5;
       event.returnValue = "";
-    } else if(String(arg).includes("SESSION:getAll")){
-      console.log("GET ALL SESSION")
-      event.returnValue = knownSessions
-      console.log(knownSessions)
-      console.log("GET ALL SESSIOON DONE")
+    } else if (String(arg).includes("SESSION:getAll")) {
+      console.log("GET ALL SESSION");
+      event.returnValue = knownSessionsByUUID;
+      console.log(knownSessionsByUUID);
+      console.log("GET ALL SESSIOON DONE");
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
     }
