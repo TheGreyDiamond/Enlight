@@ -49,7 +49,7 @@ var service = {
   host: "127.0.0.1", // when omitted, defaults to the local IP
   port: PORT,
   memberCount: 1,
-  UUID: ""
+  UUID: "",
   // any additional information is allowed and will be propagated
 };
 
@@ -76,12 +76,12 @@ diont.on("serviceAnnounced", function (serviceInfo) {
   console.log("A new session was announced", serviceInfo.service);
   // List currently known services
   //knownSessions.push(serviceInfo.service);
-  knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service
+  knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service;
 });
 
 diont.on("serviceRenounced", function (serviceInfo) {
   //console.log("A session was renounced", serviceInfo.service);
-  knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service
+  knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service;
 });
 
 // Preload all pages
@@ -346,16 +346,16 @@ function init() {
       while (sessinUids.includes(uidSes)) {
         uidSes = nanoid();
         rounds++;
-        if(rounds >= 10000){
-          // This takes a lot of rounds, there are two possible reasons to this: 
+        if (rounds >= 10000) {
+          // This takes a lot of rounds, there are two possible reasons to this:
           // A lot of sessions or a broken nanoid() random generation
-          console.warn("It takes very long to find a unique session UUID")
+          console.warn("It takes very long to find a unique session UUID");
         }
-        if(rounds >= 40000){
+        if (rounds >= 40000) {
           // Okay, no. We shall give up now. Something is very, very wrong here.
-          console.error("Took to long to find a session UUID")
+          console.error("Took to long to find a session UUID");
           sessionState = 4;
-          return("")
+          return "";
         }
       }
 
