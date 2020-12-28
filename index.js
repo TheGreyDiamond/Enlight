@@ -73,22 +73,17 @@ var mySession = {
 var mainConn = "";
 var mainNetworkInterface = undefined;
 
-var knownSessions = {};
+var knownSessions = [];
 
 diont.on("serviceAnnounced", function(serviceInfo) {
-  console.log("A new service was announced", serviceInfo.service);
+  console.log("A new session was announced", serviceInfo.service);
   // List currently known services
-  console.log("All known services", serviceInfo.service);
-  //knownSessions.push(serviceInfo.service)
-  console.log("Known to me sessions: ", knownSessions)
-  console.warn(serviceInfo.service)
+  knownSessions.push(serviceInfo.service)
 });
 
 diont.on("serviceRenounced", function(serviceInfo) {
-  console.log("A service was renounced", serviceInfo.service);
-  console.log("All known services", diont.getServiceInfos());
-  //knownSessions.push(serviceInfo.service)
-  console.log("Known to me sessions: ", knownSessions)
+  //console.log("A session was renounced", serviceInfo.service);
+  knownSessions.push(serviceInfo.service)
 });
 
 
