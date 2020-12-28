@@ -23,6 +23,7 @@
         <th>Name</th>
         <th>Host</th>
         <th>Amount of members</th>
+        <th>    </th>
       </tr>
     </table>
     <script>
@@ -39,7 +40,7 @@
       setInterval(function(){
         allSess = ipcRenderer.sendSync("synchronous-message", "SESSION:getAll" )
         elmList = document.getElementById("sessionListTa")
-        elmList.innerHTML = "<tr><th>Name</th><th>Host</th><th>Amount of members</th></tr>"
+        elmList.innerHTML = "<tr><th>Name</th><th>Host</th><th>Amount of members</th><th>    </th></tr>"
         SesKeys = Object.keys(allSess)
         var i = 0
         insBlock = ""
@@ -49,6 +50,7 @@
           insBlock += "<td>" + allSess[SesKeys[i]].name + "</td>"
           insBlock += "<td>" + allSess[SesKeys[i]].host + "</td>"
           insBlock += "<td>" + allSess[SesKeys[i]].memberCount + "</td>"
+          insBlock += "<td><button onclick='console.log(ipcRenderer.sendSync(\"synchronous-message\", \"SESSION:joinSession|" + SesKeys[i] + "\" ))'>Join</button></td>"
           insBlock += "</tr>"
           elmList.innerHTML = elmList.innerHTML + insBlock
           i++;

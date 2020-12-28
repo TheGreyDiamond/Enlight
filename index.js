@@ -12,9 +12,10 @@ const sysInf = require("systeminformation");
 const express = require("express");
 const { time } = require("console");
 const { nanoid } = require("nanoid");
-const restApp = express();
 const diont = require("diont")();
+const request = require('request');
 
+const restApp = express();
 const restPort = 33334;
 const PORT = 33333;
 const MULTICAST_ADDR = "192.168.178.50";
@@ -219,9 +220,14 @@ function init() {
   sessionState = 0; // Init with no connection
   setTimeout(function () {
     console.log("Starting restfulServer API interface");
-    restApp.listen(restPort, () => {
-      console.log(`Restful is running on http://localhost:${restPort}`);
-    });
+    try{
+      restApp.listen(restPort, () => {
+        console.log(`Restful is running on http://localhost:${restPort}`);
+      });
+    }catch(e){
+      console.warn("This program cannot be a host")
+    }
+    
 
     restApp.get("/", (req, res) => {
       res.send("Hello World! The RestFul API of Enlight is up and working!");
@@ -242,6 +248,7 @@ function init() {
     });
 
     restApp.get("/api/v1/session/join", (req, res) => {
+      console.log("Getting a join request")
       if (mySession.joinable) {
         if (mySession.passwordProtected == false) {
           uid = nanoid();
@@ -363,33 +370,31 @@ function init() {
       service.host = mainNetworkInterface.ip4;
       mySession.name = String(arg).split("|")[1];
       service.name = String(arg).split("|")[1];
-      console.log("Annouce start");
       diont.announceService(service);
-      console.log("Annouce done");
       mySession.joinable = true;
       sessionState = 2;
       sessionStateGoal = 2;
       event.returnValue = "";
 
-      sessionAnn = setInterval(function () {
-        console.log("announce");
-        diont.announceService(service);
-      }, 10000);
-
       sessionReAnn = setInterval(function () {
-        console.log("REANNOUCNE");
         diont.renounceService(service);
       }, 5000);
-    } else if (String(arg).includes("SESSION:startSearch")) {
-      console.log("starting search");
-
-      sessionState = 5;
-      event.returnValue = "";
+    } else if (String(arg).includes("SESSION:joinSession")) {
+      sessionState = 1
+      UUIDtoJoin = String(arg).split("|")[1];
+      ipToJoin = knownSessionsByUUID[UUIDtoJoin].host
+      requestURL = "http://" + ipToJoin + ':33334/api/v1/session/join'
+      console.log(requestURL)
+      request(requestURL, { json: true }, (err, res, body) => {
+      if (err) { 
+       return console.log(err); 
+      }
+      event.returnValue = body;});
+      sessionState = 3 // Just guess it was okay
+      
     } else if (String(arg).includes("SESSION:getAll")) {
-      console.log("GET ALL SESSION");
       event.returnValue = knownSessionsByUUID;
       console.log(knownSessionsByUUID);
-      console.log("GET ALL SESSIOON DONE");
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
     }
