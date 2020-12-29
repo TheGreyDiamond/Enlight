@@ -1,7 +1,90 @@
+<style>
+  table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    overflow-y: scroll;
+    height: 80%;
+  }
+  
+  td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+    
+  }
+  .cust {
+    overflow-y: scroll;
+    height: 80%;
+  }
+  </style>    
+    
     <h1>Fixtures</h1>
     <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.index");'>Back</button>
     <button onclick='ipcRenderer.sendSync("synchronous-message", "FIXTURE:initDB");'>Do magic init stuff</button><br><br>
-    <input type = "text" placeholder="Search fixture libary"></input><br>
+    <input type = "text" placeholder="Search fixture libary" id="libSearch"></input><br>
+    <div class="cust">
+    <table id="fixtureList">
+      <tr>
+        <th>Name</th>
+        <th>Manufacturer:</th>
+        <th>Description:</th>
+      </tr>
+      <tr>
+        <td> </td>
+        <td> </td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td> </td>
+        <td> </td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td> </td>
+        <td> </td>
+        <td> </td>
+      </tr>
+
+      <tr>
+        <td> </td>
+        <td> </td>
+        <td> </td>
+      </tr>
+    </table>
+  </div>
+
+    <script>
+      firstState = document.getElementById("libSearch").value
+      setInterval(function(){
+        temp = document.getElementById("libSearch").value
+        if(temp != firstState){
+          outy = ipcRenderer.sendSync("synchronous-message", "FIXTURE:search|" + temp);
+          console.log(outy)
+          elm = document.getElementById("fixtureList")
+          elm.innerHTML = `
+          <tr>
+        <th>Name</th>
+        <th>Manufacturer</th>
+        <th>Description</th>
+      </tr>
+          `
+          i = 0
+          while(i<outy.length){
+            text = ""
+            text += "<tr>"
+              text += "<td>" + outy[i].LongName + "</td>"
+              text += "<td>" + outy[i].Manufacturer + "</td>"
+              text += "<td>" + outy[i].Description + "</td>"
+              text += "</tr>"
+            elm.innerHTML += text
+            i++
+          }
+          firstState = temp
+        }
+      }, 500)
+    </script>
+
     
   </body>
 </html>

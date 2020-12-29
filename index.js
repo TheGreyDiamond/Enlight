@@ -157,6 +157,7 @@ function rebuildFixtureLib() {
       db.run(sqlDyn);
       i += 1;
     }
+    db.close()
   }, 1000);
 }
 
@@ -476,6 +477,21 @@ function init() {
     } else if (String(arg).includes("FIXTURE:initDB")) {
       rebuildFixtureLib()
       event.returnValue = "";
+    } else if (String(arg).includes("FIXTURE:search")) {
+      term = String(arg).split("|")[1];
+      sqlQ = "SELECT * FROM fixtures WHERE Name LIKE '%" + term + "%' or LongName LIKE '%" + term + "%' or ShortName LIKE '%" + term + "%' or Manufacturer LIKE '%" + term + "%';"
+      console.log(sqlQ)
+      let db = new sqlite3.Database("usrStore/fixtureDB.sqlite");
+      db.all(sqlQ, [], (err, rows) => {
+        console.log("ALIVE");
+        if (err) {
+          throw err
+          }
+          event.returnValue = rows;
+          console.log(rows)
+      });
+      db.close()
+      
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
     }
