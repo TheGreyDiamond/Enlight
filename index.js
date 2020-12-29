@@ -158,31 +158,6 @@ function rebuildFixtureLib() {
       i += 1;
     }
   }, 1000);
-
-  /*, [], (err, rows) => {
-      if (err) {
-        console.log(err);
-      }
-      try {
-        rows.length;
-      } catch (error) {
-        console.log("There is no DB structure, creating a new one.");
-        sql =
-          "                                    \
-    CREATE TABLE `fixtures` (                  \
-      `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
-      `LongName` VARCHAR(255),                 \
-      `Name` VARCHAR(255),                     \
-      `ShortName` VARCHAR(255),                \
-      `Manufacturer` VARCHAR(255),             \
-      `Description` VARCHAR(255),              \
-      `Thumbnail` VARCHAR(150),                \
-      `fileName` VARCHAR(255) );";
-        db.run(sql)
-      }
-    });*/
-
-  
 }
 
 // Preload all pages
@@ -239,6 +214,7 @@ function createWindow() {
     height: screen.getPrimaryDisplay().size.height,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
   });
   win.setFullScreen(true);
@@ -262,6 +238,7 @@ function createStartupInfo() {
     frame: false,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
   });
 
