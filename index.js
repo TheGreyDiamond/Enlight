@@ -93,6 +93,98 @@ diont.on("serviceRenounced", function (serviceInfo) {
   knownSessionsByUUID[serviceInfo.service.UUID] = serviceInfo.service;
 });
 
+function rebuildFixtureLib() {
+  let db = new sqlite3.Database("usrStore/fixtureDB.sqlite");
+
+  db.all("SELECT * FROM fixtures;", [], (err, rows) => {
+    console.log("ALIVE");
+    if (err) {
+      sql =
+        "                                    \
+    CREATE TABLE `fixtures` (                  \
+      `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
+      `LongName` VARCHAR(255),                 \
+      `Name` VARCHAR(255),                     \
+      `ShortName` VARCHAR(255),                \
+      `Manufacturer` VARCHAR(255),             \
+      `Description` VARCHAR(255),              \
+      `Thumbnail` VARCHAR(150),                \
+      `fileName` VARCHAR(255) );";
+      db.run(sql);
+    }
+  });
+  db.close();
+
+  setTimeout(function () {
+    let db = new sqlite3.Database("usrStore/fixtureDB.sqlite");
+    flds = fs.readdirSync("fixtures");
+    i = 0;
+    while (i < flds.length) {
+      var zip = new AdmZip("fixtures/" + flds[i]);
+      descRaw = zip.readAsText("description.xml");
+      descParsed = new xmldoc.XmlDocument(descRaw);
+      console.log(descParsed.children[1].attr.LongName);
+      if (descParsed["name"] != "GDTF") {
+        console.warn(flds[i] + " is not a valid fixture file");
+      }
+      if (descParsed.attr.DataVersion != "1.0") {
+        console.warn(
+          "Version " +
+            descParsed.attr.DataVersion +
+            " of GDTF is not completly supported yet"
+        );
+      }
+      fileNameT = flds[i];
+      desc = descParsed.children[1].attr.Description
+      desc = desc.replaceAll("'", " ")
+      sqlDyn =
+        "INSERT INTO fixtures (LongName, Name, ShortName, Manufacturer, Description, Thumbnail, fileName) VALUES ('" +
+        descParsed.children[1].attr.LongName +
+        "','" +
+        descParsed.children[1].attr.Name +
+        "','" +
+        descParsed.children[1].attr.ShortName +
+        "','" +
+        descParsed.children[1].attr.Manufacturer +
+        "','" +
+        desc +
+        "','" +
+        descParsed.children[1].attr.Thumbnail +
+        "','" +
+        fileNameT +
+        "');";
+        // console.log(sqlDyn)
+      db.run(sqlDyn);
+      i += 1;
+    }
+  }, 1000);
+
+  /*, [], (err, rows) => {
+      if (err) {
+        console.log(err);
+      }
+      try {
+        rows.length;
+      } catch (error) {
+        console.log("There is no DB structure, creating a new one.");
+        sql =
+          "                                    \
+    CREATE TABLE `fixtures` (                  \
+      `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
+      `LongName` VARCHAR(255),                 \
+      `Name` VARCHAR(255),                     \
+      `ShortName` VARCHAR(255),                \
+      `Manufacturer` VARCHAR(255),             \
+      `Description` VARCHAR(255),              \
+      `Thumbnail` VARCHAR(150),                \
+      `fileName` VARCHAR(255) );";
+        db.run(sql)
+      }
+    });*/
+
+  
+}
+
 // Preload all pages
 function preloadPages() {
   for (const [key, value] of Object.entries(pageLookup)) {
@@ -405,87 +497,7 @@ function init() {
       event.returnValue = knownSessionsByUUID;
       console.log(knownSessionsByUUID);
     } else if (String(arg).includes("FIXTURE:initDB")) {
-      let db = new sqlite3.Database("usrStore/fixtureDB.sqlite");
-      db.all("SELECT * FROM fixtures;", [], (err, rows) => {
-        console.log("ALIVE");
-        if (err) {
-          sql =
-              "                                    \
-        CREATE TABLE `fixtures` (                  \
-          `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
-          `LongName` VARCHAR(255),                 \
-          `Name` VARCHAR(255),                     \
-          `ShortName` VARCHAR(255),                \
-          `Manufacturer` VARCHAR(255),             \
-          `Description` VARCHAR(255),              \
-          `Thumbnail` VARCHAR(150),                \
-          `fileName` VARCHAR(255) );";
-            db.run(sql)
-        } else {
-          flds = fs.readdirSync("fixtures");
-          i = 0;
-          while (i < flds.length) {
-            var zip = new AdmZip("fixtures/" + flds[i]);
-            descRaw = zip.readAsText("description.xml");
-            descParsed = new xmldoc.XmlDocument(descRaw);
-            console.log(descParsed.children[1].attr.LongName);
-            if (descParsed["name"] != "GDTF") {
-              console.warn(flds[i] + " is not a valid fixture file");
-            }
-            if (descParsed.attr.DataVersion != "1.0") {
-              console.warn(
-                "Version " +
-                  descParsed.attr.DataVersion +
-                  " of GDTF is not completly supported yet"
-              );
-            }
-            fileNameT = flds[i];
-            sqlDyn =
-              "INSERT INTO fixtures (LongName, Name, ShortName, Manufacturer, Description, Thumbnail, fileName) VALUES ('" +
-              descParsed.children[1].attr.LongName +
-              "','" +
-              descParsed.children[1].attr.Name +
-              "','" +
-              descParsed.children[1].attr.ShortName +
-              "','" +
-              descParsed.children[1].attr.Manufacturer +
-              "','" +
-              descParsed.children[1].attr.Description +
-              "','" +
-              descParsed.children[1].attr.Thumbnail +
-              "','" +
-              fileNameT +
-              "');";
-            db.run(sqlDyn);
-            i += 100;
-          }
-        }
-        waitHere = false;
-      });
-      /*, [], (err, rows) => {
-          if (err) {
-            console.log(err);
-          }
-          try {
-            rows.length;
-          } catch (error) {
-            console.log("There is no DB structure, creating a new one.");
-            sql =
-              "                                    \
-        CREATE TABLE `fixtures` (                  \
-          `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
-          `LongName` VARCHAR(255),                 \
-          `Name` VARCHAR(255),                     \
-          `ShortName` VARCHAR(255),                \
-          `Manufacturer` VARCHAR(255),             \
-          `Description` VARCHAR(255),              \
-          `Thumbnail` VARCHAR(150),                \
-          `fileName` VARCHAR(255) );";
-            db.run(sql)
-          }
-        });*/
-
-      db.close();
+      rebuildFixtureLib()
       event.returnValue = "";
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
