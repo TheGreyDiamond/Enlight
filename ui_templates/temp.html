@@ -201,67 +201,8 @@
 
   <!--</body>
 </html>-->
-
-    <h1>Sessions</h1>
-    yes.
-    <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.index");'>Go back</button>
-    <state>Sessionstate: <state id = "sessionStateText">unknown</state></state>
-    <script>
-      connectionStatesAsText = {"-1": "Unknown", "0": "Not connected to a session", "1": "Connecting...", "2": "Hosting", "3": "Connected", "4": "Connection failed", "5": "Seraching"};
-      setInterval(function(){
-        connectionState = ipcRenderer.sendSync("synchronous-message", "SESSION:get.state");
-        document.getElementById("sessionStateText").innerHTML = connectionStatesAsText[String(connectionState)];
-      }, 1000);
-      
-    </script>
-    Name: <input type="text" value="Unnamed session" id="sessionName">
-    <button onclick='createNewSession()'>
-      Create new session
-    </button>
-    <button onclick='ipcRenderer.sendSync("synchronous-message", "SESSION:startSearch");'>
-      Start session search
-    </button>
-    <table id="sessionListTa">
-      <tr>
-        <th>Name</th>
-        <th>Host</th>
-        <th>Amount of members</th>
-        <th>    </th>
-      </tr>
-    </table>
-    <script>
-      function createNewSession() {
-        val = document.getElementById("sessionName").value
-        if (val.indexOf('|') > -1)
-        {
-          alert("Your Sessionname may not contain a |");
-        }
-        console.log(val)
-        ipcRenderer.sendSync("synchronous-message", "SESSION:createNew|" + val);
-      }
-
-      setInterval(function(){
-        allSess = ipcRenderer.sendSync("synchronous-message", "SESSION:getAll" )
-        elmList = document.getElementById("sessionListTa")
-        elmList.innerHTML = "<tr><th>Name</th><th>Host</th><th>Amount of members</th><th>    </th></tr>"
-        SesKeys = Object.keys(allSess)
-        var i = 0
-        insBlock = ""
-        while(i < SesKeys.length){
-          console.log(i, SesKeys[i], allSess[SesKeys[i]])
-          insBlock = "<tr>"
-          insBlock += "<td>" + allSess[SesKeys[i]].name + "</td>"
-          insBlock += "<td>" + allSess[SesKeys[i]].host + "</td>"
-          insBlock += "<td>" + allSess[SesKeys[i]].memberCount + "</td>"
-          insBlock += "<td><button onclick='console.log(ipcRenderer.sendSync(\"synchronous-message\", \"SESSION:joinSession|" + SesKeys[i] + "\" ))'>Join</button></td>"
-          insBlock += "</tr>"
-          elmList.innerHTML = elmList.innerHTML + insBlock
-          i++;
-        }
-        
-
-        console.log(allSess);
-      }, 5000)
-    </script>
+    <h1>Fixtures</h1>
+    <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.index");'>Back</button>
+    <button onclick='ipcRenderer.sendSync("synchronous-message", "FIXTURE:initDB");'>Do magic init stuff</button>
   </body>
 </html>

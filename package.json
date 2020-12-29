@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/TheGreyDiamond/Enlight#readme",
   "dependencies": {
+    "adm-zip": "^0.5.1",
     "config-js": "^1.1.14",
     "diont": "^0.9.7",
     "ejs": "^3.1.5",
@@ -28,7 +29,9 @@
     "express": "^4.17.1",
     "nanoid": "^3.1.18",
     "request": "^2.88.2",
+    "sqlite3": "^5.0.0",
     "systeminformation": "^4.31.1",
+    "xmldoc": "^1.1.2",
     "yarn": "^1.22.10"
   }
 }

@@ -188,6 +188,7 @@
     <!--<iframe src="header.html" class="headerIframe"></iframe>-->
     <h1>Hello World!</h1>
     <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.session");'>Session screen</button>
+    <button onclick='ipcRenderer.sendSync("synchronous-message", "PAGE:change.fixtures");'>Fixture screen</button>
     We are using node
     <script>
       document.write(process.versions.node);

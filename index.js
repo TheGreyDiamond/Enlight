@@ -13,7 +13,10 @@ const express = require("express");
 const { time } = require("console");
 const { nanoid } = require("nanoid");
 const diont = require("diont")();
-const request = require('request');
+const request = require("request");
+var AdmZip = require("adm-zip");
+var xmldoc = require("xmldoc");
+const sqlite3 = require("sqlite3");
 
 const restApp = express();
 const restPort = 33334;
@@ -34,6 +37,7 @@ var pageLookup = {};
 pageLookup["index"] = "index.html";
 pageLookup["session"] = "sessions.html";
 pageLookup["header"] = "header.html";
+pageLookup["fixtures"] = "fixtures.html";
 
 /// !!!-----------!!!
 //  Session state data
@@ -72,6 +76,10 @@ var mainNetworkInterface = undefined;
 
 //var knownSessions = [];
 var knownSessionsByUUID = {};
+
+function setVarWait(state) {
+  waitHere = state;
+}
 
 diont.on("serviceAnnounced", function (serviceInfo) {
   console.log("A new session was announced", serviceInfo.service);
@@ -220,14 +228,13 @@ function init() {
   sessionState = 0; // Init with no connection
   setTimeout(function () {
     console.log("Starting restfulServer API interface");
-    try{
+    try {
       restApp.listen(restPort, () => {
         console.log(`Restful is running on http://localhost:${restPort}`);
       });
-    }catch(e){
-      console.warn("This program cannot be a host")
+    } catch (e) {
+      console.warn("This program cannot be a host");
     }
-    
 
     restApp.get("/", (req, res) => {
       res.send("Hello World! The RestFul API of Enlight is up and working!");
@@ -248,7 +255,7 @@ function init() {
     });
 
     restApp.get("/api/v1/session/join", (req, res) => {
-      console.log("Getting a join request")
+      console.log("Getting a join request");
       if (mySession.joinable) {
         if (mySession.passwordProtected == false) {
           uid = nanoid();
@@ -382,21 +389,104 @@ function init() {
         diont.renounceService(service);
       }, 5000);
     } else if (String(arg).includes("SESSION:joinSession")) {
-      sessionState = 1
+      sessionState = 1;
       UUIDtoJoin = String(arg).split("|")[1];
-      ipToJoin = knownSessionsByUUID[UUIDtoJoin].host
-      requestURL = "http://" + ipToJoin + ':33334/api/v1/session/join'
-      console.log(requestURL)
+      ipToJoin = knownSessionsByUUID[UUIDtoJoin].host;
+      requestURL = "http://" + ipToJoin + ":33334/api/v1/session/join";
+      console.log(requestURL);
       request(requestURL, { json: true }, (err, res, body) => {
-      if (err) { 
-       return console.log(err); 
-      }
-      event.returnValue = body;});
-      sessionState = 3 // Just guess it was okay
-      
+        if (err) {
+          return console.log(err);
+        }
+        event.returnValue = body;
+      });
+      sessionState = 3; // Just guess it was okay
     } else if (String(arg).includes("SESSION:getAll")) {
       event.returnValue = knownSessionsByUUID;
       console.log(knownSessionsByUUID);
+    } else if (String(arg).includes("FIXTURE:initDB")) {
+      let db = new sqlite3.Database("usrStore/fixtureDB.sqlite");
+      db.all("SELECT * FROM fixtures;", [], (err, rows) => {
+        console.log("ALIVE");
+        if (err) {
+          sql =
+              "                                    \
+        CREATE TABLE `fixtures` (                  \
+          `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
+          `LongName` VARCHAR(255),                 \
+          `Name` VARCHAR(255),                     \
+          `ShortName` VARCHAR(255),                \
+          `Manufacturer` VARCHAR(255),             \
+          `Description` VARCHAR(255),              \
+          `Thumbnail` VARCHAR(150),                \
+          `fileName` VARCHAR(255) );";
+            db.run(sql)
+        } else {
+          flds = fs.readdirSync("fixtures");
+          i = 0;
+          while (i < flds.length) {
+            var zip = new AdmZip("fixtures/" + flds[i]);
+            descRaw = zip.readAsText("description.xml");
+            descParsed = new xmldoc.XmlDocument(descRaw);
+            console.log(descParsed.children[1].attr.LongName);
+            if (descParsed["name"] != "GDTF") {
+              console.warn(flds[i] + " is not a valid fixture file");
+            }
+            if (descParsed.attr.DataVersion != "1.0") {
+              console.warn(
+                "Version " +
+                  descParsed.attr.DataVersion +
+                  " of GDTF is not completly supported yet"
+              );
+            }
+            fileNameT = flds[i];
+            sqlDyn =
+              "INSERT INTO fixtures (LongName, Name, ShortName, Manufacturer, Description, Thumbnail, fileName) VALUES ('" +
+              descParsed.children[1].attr.LongName +
+              "','" +
+              descParsed.children[1].attr.Name +
+              "','" +
+              descParsed.children[1].attr.ShortName +
+              "','" +
+              descParsed.children[1].attr.Manufacturer +
+              "','" +
+              descParsed.children[1].attr.Description +
+              "','" +
+              descParsed.children[1].attr.Thumbnail +
+              "','" +
+              fileNameT +
+              "');";
+            db.run(sqlDyn);
+            i += 100;
+          }
+        }
+        waitHere = false;
+      });
+      /*, [], (err, rows) => {
+          if (err) {
+            console.log(err);
+          }
+          try {
+            rows.length;
+          } catch (error) {
+            console.log("There is no DB structure, creating a new one.");
+            sql =
+              "                                    \
+        CREATE TABLE `fixtures` (                  \
+          `id` INTEGER PRIMARY KEY AUTOINCREMENT,  \
+          `LongName` VARCHAR(255),                 \
+          `Name` VARCHAR(255),                     \
+          `ShortName` VARCHAR(255),                \
+          `Manufacturer` VARCHAR(255),             \
+          `Description` VARCHAR(255),              \
+          `Thumbnail` VARCHAR(150),                \
+          `fileName` VARCHAR(255) );";
+            db.run(sql)
+          }
+        });*/
+
+      db.close();
+      event.returnValue = "";
     } else {
       event.returnValue = "ERR:UNKNOW_CMD";
     }
