@@ -1,203 +1,234 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Enlight - Screen 1</title>
-    <!--<meta
-      http-equiv="Content-Security-Policy"
-      content="script-src 'self' 'unsafe-inline';"
-    />-->
-    <script src="static/jquery-1.7.1.min.js" type="text/javascript"></script>
-    <script src="static/js/helper.js" type="text/javascript"></script>
-    <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>*-->
-    <link href="static/default.css" rel="stylesheet" />
-    <link
-      href="static/fontawesome-free-5.15.1-web/css/all.css"
-      rel="stylesheet"
-    />
-    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">-->
-  </head>
-  <body>
-    <div id="header-bar" class="header-bar">
-      <div class="areaRight">
-        <network>
-          <i
-            class="fas fa-network-wired"
-            id="networkBtn"
-            onclick='document.getElementById("networkDropdown").classList.toggle("show");buildNetworkDropDown();'
-          ></i>
-          <div id="networkDropdown" class="dropdown-content"></div>
-        </network>
-        <battery id="battery" class="fa"></battery>
-        <clock id="clock" class="header-clock"></clock>
-        <i
-          class="fa-spin loader1 fa"
-          style="font-size: 18px; padding-right: 4px"
-          id="loader"
-          >&#xf1ce;</i
-        >
-      </div>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Enlight - Screen 1</title>
+  <script src="static/jquery-1.7.1.min.js" type="text/javascript"></script>
+  <script src="static/js/helper.js" type="text/javascript"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="static/default.css" rel="stylesheet" />
+  <link href="static/fontawesome-free-5.15.1-web/css/all.css" rel="stylesheet" />
+  <dataStore id="modals" style="display: none;">
+    {"open": []}
+  </dataStore>
+</head>
+
+<body>
+  <script>
+    let modalsList = [];
+  </script>
+  <modal class="modal" id="mainModal">
+
+  </modal>
+
+  </div>
+  <div id="header-bar" class="header-bar">
+    <div class="areaRight">
+      <power>
+        <i class="fas fa-power-off" id="powerBtn"
+          onclick='createModalPopup("Power Functions", "What action do you want to execute?", "<button>Shutdown</button><button>Lock</button><button onclick=\" quitApplication() \">Close Software</button>")'></i>
+      </power>
+
+      <network>
+        <i class="fas fa-network-wired" id="networkBtn"
+          onclick='document.getElementById("networkDropdown").classList.toggle("show");buildNetworkDropDown();'></i>
+        <div id="networkDropdown" class="dropdown-content">
+        </div>
+      </network>
+      <battery id="battery" class="fa"></battery>
+      <clock id="clock" class="header-clock"></clock>
+      <i class="fa-spin loader1 fa" style="font-size: 18px; padding-right: 4px" id="loader">&#xf1ce;</i>
     </div>
-    <script>
-      var loaderInUse = true;
-      const { ipcRenderer } = require("electron");
-      setInterval(function () {
-        // Pulling general info from main thread
-        loadOverride = ipcRenderer.sendSync(
-          "synchronous-message",
-          "loadOverride"
-        );
-        if (!loaderInUse) {
-          if (loadOverride) {
-            document.getElementById("loader").innerHTML = "&#xf1ce;";
-          } else {
-            document.getElementById("loader").innerHTML = "";
-          }
-        }
-      }, 500);
-
-      // Network info
-      var allNetworkNames = [];
-      function buildNetworkDropDown() {
-        loaderInUse = true;
-        document.getElementById("loader").innerHTML = "&#xf1ce;";
-        console.log("show loader")
-        const timestamp = Date.now();
-        allNetworks = ipcRenderer.sendSync(
-          "synchronous-message",
-          "getNetworks"
-        );
-        lastNetwork = ipcRenderer.sendSync(
-          "synchronous-message",
-          "getMainNetwork"
-        );
-        const timestamp2 = Date.now();
-        console.log("Requests took" , (timestamp2 - timestamp))
-
-        allNetworkNames = [];
-        console.log(lastNetwork);
-        i = 0;
-        var dropDown = document.getElementById("networkDropdown");
-        dropDown.innerHTML = "";
-        while (i < allNetworks.length) {
-          temp =
-            "<a id='networkEntry" +
-            String(i) +
-            "' onclick='selectNewNetwork(" +
-            String(i) +
-            ")'>&nbsp;&nbsp;&nbsp;" +
-            encode_html(allNetworks[i].ifaceName) +
-            "</a>";
-          dropDown.innerHTML += temp;
-          allNetworkNames.push(allNetworks[i].ifaceName);
-          i++;
-        }
-
-        if (does_list_contain(allNetworkNames, lastNetwork)) {
-          nameOfElm =
-            "networkEntry" + String(allNetworkNames.indexOf(lastNetwork));
-          networkEntryElm = document.getElementById(nameOfElm);
-          networkEntryElm.innerHTML = networkEntryElm.innerHTML.replace(
-            "&nbsp;&nbsp;&nbsp;",
-            "&#10004;"
-          );
+  </div>
+  <script>
+    var loaderInUse = true;
+    const { ipcRenderer } = require("electron");
+    setInterval(function () {
+      // Pulling general info from main thread
+      loadOverride = ipcRenderer.sendSync(
+        "synchronous-message",
+        "loadOverride"
+      );
+      if (!loaderInUse) {
+        if (loadOverride) {
+          document.getElementById("loader").innerHTML = "&#xf1ce;";
         } else {
-          console.warn("Network is no longer valid");
-          ipcRenderer.sendSync(
-            "synchronous-message",
-            "state:networkNoLongerValid"
-          );
+          document.getElementById("loader").innerHTML = "";
         }
-        console.log("hide loader")
-        loaderInUse = false;
-        document.getElementById("loader").innerHTML = "";
+      }
+    }, 500);
+
+    function quitApplication() {
+      if (ipcRenderer.sendSync('synchronous-message', 'ACTION:power.quit') == "ANS:PROJECT_DIRTY") {
+
+      }
+    }
+
+    var modal = document.getElementById("powerDropdown");
+    var span = document.getElementsByClassName("close")[0];
+
+    // When the user clicks on <span> (x), close the modal
+    span.onclick = function () {
+      modal.style.display = "none";
+    }
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+
+    // Power dialog
+    function powerDropdown() {
+      loaderInUse = true;
+      document.getElementById("loader").innerHTML = "&#xf1ce;";
+      document.getElementById("powerDropdown").innerHTML = "test"
+    }
+
+    // Network info
+    var allNetworkNames = [];
+    function buildNetworkDropDown() {
+      loaderInUse = true;
+      document.getElementById("loader").innerHTML = "&#xf1ce;";
+      console.log("show loader")
+      const timestamp = Date.now();
+      allNetworks = ipcRenderer.sendSync(
+        "synchronous-message",
+        "getNetworks"
+      );
+      lastNetwork = ipcRenderer.sendSync(
+        "synchronous-message",
+        "getMainNetwork"
+      );
+      const timestamp2 = Date.now();
+      console.log("Requests took", (timestamp2 - timestamp))
+
+      allNetworkNames = [];
+      console.log(lastNetwork);
+      i = 0;
+      var dropDown = document.getElementById("networkDropdown");
+      dropDown.innerHTML = "";
+      while (i < allNetworks.length) {
+        temp =
+          "<a id='networkEntry" +
+          String(i) +
+          "' onclick='selectNewNetwork(" +
+          String(i) +
+          ")'>&nbsp;&nbsp;&nbsp;" +
+          encode_html(allNetworks[i].ifaceName) +
+          "</a>";
+        dropDown.innerHTML += temp;
+        allNetworkNames.push(allNetworks[i].ifaceName);
+        i++;
       }
 
-      function selectNewNetwork(id) {
-        idAsNumber = parseInt(id);
-        newNetwork = allNetworkNames[id];
-        ipcRenderer.sendSync(
-          "synchronous-message",
-          "set:newNetwork|" + newNetwork
-        );
-        buildNetworkDropDown();
-
-        nameOfElm = "networkEntry" + String(idAsNumber);
+      if (does_list_contain(allNetworkNames, lastNetwork)) {
+        nameOfElm =
+          "networkEntry" + String(allNetworkNames.indexOf(lastNetwork));
         networkEntryElm = document.getElementById(nameOfElm);
         networkEntryElm.innerHTML = networkEntryElm.innerHTML.replace(
           "&nbsp;&nbsp;&nbsp;",
           "&#10004;"
         );
+      } else {
+        console.warn("Network is no longer valid");
+        ipcRenderer.sendSync(
+          "synchronous-message",
+          "state:networkNoLongerValid"
+        );
       }
+      console.log("hide loader")
+      loaderInUse = false;
+      document.getElementById("loader").innerHTML = "";
+    }
+
+    function selectNewNetwork(id) {
+      idAsNumber = parseInt(id);
+      newNetwork = allNetworkNames[id];
+      ipcRenderer.sendSync(
+        "synchronous-message",
+        "set:newNetwork|" + newNetwork
+      );
+      buildNetworkDropDown();
+
+      nameOfElm = "networkEntry" + String(idAsNumber);
+      networkEntryElm = document.getElementById(nameOfElm);
+      networkEntryElm.innerHTML = networkEntryElm.innerHTML.replace(
+        "&nbsp;&nbsp;&nbsp;",
+        "&#10004;"
+      );
+    }
       //setTimeout(function(){
       //  buildNetworkDropDown();
       //}, 1000)
       //
-    </script>
-    <script>
-      // Battery info screen
-      batteryExists = ipcRenderer.sendSync("synchronous-message", "hasBattery"); // prints "pong"
-      var batteryShowdStart = false;
-      if (batteryExists) {
-        batteryLevel = ipcRenderer.sendSync(
-          "synchronous-message",
-          "getBatteryLevel"
+  </script>
+  <script>
+    // Battery info screen
+    batteryExists = ipcRenderer.sendSync("synchronous-message", "hasBattery");
+    var batteryShowdStart = false;
+    if (batteryExists) {
+      batteryLevel = ipcRenderer.sendSync(
+        "synchronous-message",
+        "getBatteryLevel"
+      );
+
+      //Setup regular updates
+      setInterval(function () {
+        batteryLevel = parseInt(
+          ipcRenderer.sendSync("synchronous-message", "getBatteryLevel")
         );
 
-        //Setup regular updates
-        setInterval(function () {
-          batteryLevel = parseInt(
-            ipcRenderer.sendSync("synchronous-message", "getBatteryLevel")
-          );
-
-          batteryShowdStart = true;
-          if (batteryLevel > 75) {
-            document.getElementById("battery").innerHTML = "&#xf240;";
-          } else if (batteryLevel <= 75 && batteryLevel > 50) {
-            document.getElementById("battery").innerHTML = "&#xf241;";
-          } else if (batteryLevel <= 50 && batteryLevel > 25) {
-            document.getElementById("battery").innerHTML = "&#xf242;";
-          } else if (batteryLevel <= 25 && batteryLevel > 5) {
-            document.getElementById("battery").innerHTML = "&#xf243;";
-          } else {
-            document.getElementById("battery").innerHTML = "&#xf244;";
-          }
-        }, 2000);
-      } else {
         batteryShowdStart = true;
-      }
-      if (batteryShowdStart) {
-        document.getElementById("loader").innerHTML = "";
-        loaderInUse = false;
-      }
-      
-      function updateClock(){
-        var date = new Date();
-        hour = updateTime(date.getHours());
-        min = updateTime(date.getMinutes());
-        sec = updateTime(date.getSeconds());
-        document.getElementById("clock").innerHTML =
-          hour + ":" + min + ":" + sec;
-      }
-      updateClock();
-      setInterval(function () {
-        updateClock()
-      }, 500);
-    </script>
-    <script>
-      window.onclick = function (event) {
-        if (!event.target.matches("#networkBtn")) {
-          var dropdowns = document.getElementsByClassName("dropdown-content");
-          var i;
-          for (i = 0; i < dropdowns.length; i++) {
-            var openDropdown = dropdowns[i];
-            if (openDropdown.classList.contains("show")) {
-              openDropdown.classList.remove("show");
-            }
+        if (batteryLevel > 75) {
+          document.getElementById("battery").innerHTML = "&#xf240;";
+        } else if (batteryLevel <= 75 && batteryLevel > 50) {
+          document.getElementById("battery").innerHTML = "&#xf241;";
+        } else if (batteryLevel <= 50 && batteryLevel > 25) {
+          document.getElementById("battery").innerHTML = "&#xf242;";
+        } else if (batteryLevel <= 25 && batteryLevel > 5) {
+          document.getElementById("battery").innerHTML = "&#xf243;";
+        } else {
+          document.getElementById("battery").innerHTML = "&#xf244;";
+        }
+      }, 2000);
+    } else {
+      batteryShowdStart = true;
+    }
+    if (batteryShowdStart) {
+      document.getElementById("loader").innerHTML = "";
+      loaderInUse = false;
+    }
+
+    function updateClock() {
+      var date = new Date();
+      hour = updateTime(date.getHours());
+      min = updateTime(date.getMinutes());
+      sec = updateTime(date.getSeconds());
+      document.getElementById("clock").innerHTML =
+        hour + ":" + min + ":" + sec;
+    }
+    updateClock();
+    setInterval(function () {
+      updateClock()
+    }, 500);
+  </script>
+  <script>
+    window.onclick = function (event) {
+      if (!event.target.matches("#networkBtn")) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains("show")) {
+            openDropdown.classList.remove("show");
           }
         }
-      };
-    </script>
+      }
+    };
+  </script>
 
   <!--</body>
 </html>-->

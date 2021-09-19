@@ -21,3 +21,36 @@ function updateTime(k) {
     return k;
   }
 }
+
+function createModalPopup(titel, body, actions){
+  // Creates a modal popup and makes sure only one layer of "darking" is applied.
+  // Returns the modals id
+  modalsList = JSON.parse(document.getElementById("modals").innerHTML)
+  const idTime = Date.now();
+  modalsList.open.push(idTime);
+  
+  let modal = document.getElementById("mainModal");
+  modal.style.display = "block";
+  // modal.innerHTML += '<div class="modal-content" id="modal-' + String(idTime) + '">  <span class="close" onclick="closeModal(' + String(idTime) + ')">&times;</span>' + body + '<br><button>Shutdown</button><button>Lock</button><button onclick="">Close Software</button></div>'
+  modal.innerHTML += '<div class="modal-content" id="modal-' + String(idTime) + '"> \
+   <div class="modal-header"> \
+   <span class="close" onclick="closeModal(' + String(idTime) + ')">&times;</span> \
+   <h2>' + titel + '</h2>\
+   </div>\
+   <div class="modal-body"><p>' + body + '</p></div>  \
+   <div class="modal-footer"><center>' + actions + '</center></div> \
+   </div>'
+  document.getElementById("modals").innerHTML = JSON.stringify(modalsList)
+  return(idTime)
+}
+
+function closeModal(id){
+  modalsList = JSON.parse(document.getElementById("modals").innerHTML)
+  document.getElementById("modal-" + String(id)).remove()
+  modalsList.open.pop(String(id))
+  document.getElementById("modals").innerHTML = JSON.stringify(modalsList)
+  if(modalsList.open.length == 0){
+    let modal = document.getElementById("mainModal");
+    modal.style.display = "none";
+  }
+}

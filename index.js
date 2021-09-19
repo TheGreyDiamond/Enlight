@@ -71,6 +71,11 @@ var mySession = {
   usedUIDs: [],
 };
 
+var currentState = {
+  projectName: "",
+  projectDirty: false
+}
+
 var mainConn = "";
 var mainNetworkInterface = undefined;
 
@@ -416,6 +421,17 @@ function init() {
       win.loadFile("ui_templates/temp.html");
       const timestamp3 = Date.now();
       event.returnValue = "";
+    } else if (String(arg).includes("ACTION:power")) {
+      // Change to a diffrent page of the programm
+
+      command = String(arg).split(".")[1];
+      if(command == "quit"){
+        if(currentState.projectDirty){
+          event.returnValue = "ANS:PROJECT_DIRTY";
+        }
+        app.quit()
+        console.log("Trying to quit")
+      }
     } else if (String(arg).includes("SESSION:get.state")) {
       // Retrives the session state
 
